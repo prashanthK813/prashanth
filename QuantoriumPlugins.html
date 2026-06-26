@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QUANTORIUM · PLUGINS — Extended Analyst Toolkit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4ede0;
+    --paper-deep:#ebe2cf;
+    --paper-card:#faf5e9;
+    --ink:#1a1a1a;
+    --ink-mid:#3d3a35;
+    --ink-soft:#6b665d;
+    --ink-faint:#a39e93;
+    --rule:#d6cdb8;
+    --rule-soft:#e3dac4;
+    --crimson:#9b2226;
+    --crimson-deep:#6e171a;
+    --forest:#3d5a3a;
+    --teal:#2c5b6b;
+    --ochre:#a67c2a;
+    --plum:#5e3d5e;
+    --gold:#b8862b;
+    --shadow:0 1px 0 rgba(255,255,255,0.6) inset, 0 4px 14px rgba(60,40,20,0.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    font-family:'IBM Plex Sans', sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    font-size:14px;
+    line-height:1.5;
+    overflow-x:hidden;
+    background-image:
+      radial-gradient(circle at 10% 20%, rgba(155,34,38,0.04), transparent 50%),
+      radial-gradient(circle at 90% 80%, rgba(45,91,107,0.04), transparent 50%);
+  }
+  body::before{
+    content:"";
+    position:fixed;inset:0;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='250' height='250'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.4 0 0 0 0 0.2 0 0 0 0.06 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    pointer-events:none;z-index:1;opacity:0.55;
+  }
+
+  .container{position:relative;z-index:2;max-width:1480px;margin:0 auto;padding:32px 40px 80px;}
+
+  /* ============ MASTHEAD ============ */
+  .masthead{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:3px double var(--ink);
+    padding-bottom:18px;
+    margin-bottom:6px;
+  }
+  .mh-left .pre{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;letter-spacing:0.32em;
+    text-transform:uppercase;
+    color:var(--crimson);
+    font-weight:600;
+    margin-bottom:8px;
+  }
+  .mh-left h1{
+    font-family:'Cormorant Garamond', serif;
+    font-size:60px;
+    line-height:1;
+    font-weight:600;
+    letter-spacing:-0.02em;
+  }
+  .mh-left h1 em{font-style:italic;color:var(--crimson);font-weight:500;}
+  .mh-left h1 .vol{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:14px;
+    color:var(--ink-soft);
+    font-weight:400;
+    letter-spacing:0.15em;
+    margin-left:14px;
+    vertical-align:middle;
+  }
+  .mh-right{
+    text-align:right;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--ink-mid);
+    letter-spacing:0.06em;
+  }
+  .mh-right .vol{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:18px;
+    color:var(--ink);
+    margin-bottom:4px;
+  }
+
+  .strip{
+    display:flex;justify-content:space-between;align-items:center;
+    border-bottom:1px solid var(--ink);
+    padding:8px 0;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.18em;
+    color:var(--ink-mid);
+    margin-bottom:32px;
+  }
+  .strip span{display:inline-flex;align-items:center;gap:8px;}
+  .strip span::before{content:"§";color:var(--crimson);}
+
+  /* ============ NAV ============ */
+  .nav{
+    display:flex;
+    gap:0;
+    border-bottom:1px solid var(--rule);
+    margin-bottom:32px;
+    overflow-x:auto;
+    flex-wrap:wrap;
+  }
+  .nav button{
+    background:transparent;
+    border:none;
+    border-bottom:3px solid transparent;
+    padding:14px 20px;
+    font-family:'Cormorant Garamond', serif;
+    font-size:17px;
+    font-weight:500;
+    color:var(--ink-soft);
+    cursor:pointer;
+    letter-spacing:0.01em;
+    transition:all 0.15s;
+    white-space:nowrap;
+  }
+  .nav button .num{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:9px;
+    color:var(--crimson);
+    margin-right:8px;
+    vertical-align:middle;
+    letter-spacing:0.1em;
+  }
+  .nav button:hover{color:var(--ink);}
+  .nav button.active{color:var(--ink);border-bottom-color:var(--crimson);font-style:italic;}
+  .nav button.active .num{color:var(--ink);}
+
+  /* ============ VIEWS ============ */
+  .view{display:none;animation:fade .25s ease;}
+  .view.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+  .page-head{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:24px;
+    align-items:end;
+    border-bottom:1px solid var(--ink);
+    padding-bottom:16px;
+    margin-bottom:24px;
+  }
+  .page-head h2{
+    font-family:'Cormorant Garamond', serif;
+    font-size:38px;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    line-height:1;
+  }
+  .page-head h2 em{font-style:italic;color:var(--crimson);}
+  .page-head .lede{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    color:var(--ink-soft);
+    font-size:16px;
+    margin-top:8px;
+    max-width:680px;
+  }
+  .page-head .meta{
+    text-align:right;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.15em;
+    color:var(--ink-soft);
+  }
+
+  /* ============ CARDS ============ */
+  .card{
+    background:var(--paper-card);
+    border:1px solid var(--rule);
+    padding:22px 24px;
+    box-shadow:var(--shadow);
+    position:relative;
+  }
+  .card-head{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    border-bottom:1px solid var(--rule-soft);
+    padding-bottom:12px;
+    margin-bottom:16px;
+  }
+  .card-head h3{
+    font-family:'Cormorant Garamond', serif;
+    font-size:22px;
+    font-weight:600;
+  }
+  .card-head h3 em{font-style:italic;color:var(--crimson);}
+  .card-head .tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:9px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    background:var(--paper-deep);
+    padding:4px 8px;
+    border:1px solid var(--rule);
+  }
+
+  .field{margin-bottom:14px;}
+  .field label{
+    display:block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.15em;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+    font-weight:600;
+  }
+  .field label .hint{
+    text-transform:none;letter-spacing:0;
+    color:var(--ink-faint);font-style:italic;
+    font-family:'Cormorant Garamond', serif;
+    font-size:13px;margin-left:6px;
+  }
+  .field input, .field select, .field textarea{
+    width:100%;
+    padding:9px 11px;
+    background:var(--paper);
+    border:1px solid var(--ink-soft);
+    border-radius:0;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:var(--ink);
+    outline:none;
+    transition:border-color .12s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{
+    border-color:var(--crimson); background:#fff;
+  }
+  .field textarea{font-family:'IBM Plex Mono',monospace;resize:vertical;min-height:80px;}
+  .row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .row-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+
+  .seg{display:grid;border:1px solid var(--ink-soft);}
+  .seg-2{grid-template-columns:1fr 1fr;}
+  .seg-3{grid-template-columns:1fr 1fr 1fr;}
+  .seg-opt{
+    padding:10px;text-align:center;cursor:pointer;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;letter-spacing:0.1em;text-transform:uppercase;
+    background:var(--paper);transition:all .12s;
+    border-right:1px solid var(--ink-soft);
+  }
+  .seg-opt:last-child{border-right:none;}
+  .seg-opt.active{background:var(--ink);color:var(--paper);}
+
+  .btn{
+    display:inline-block;
+    padding:11px 22px;
+    background:var(--ink);color:var(--paper);
+    border:none;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;font-weight:600;
+    letter-spacing:0.18em;text-transform:uppercase;
+    cursor:pointer;transition:all .15s;
+  }
+  .btn:hover{background:var(--crimson);}
+  .btn-outline{background:transparent;color:var(--ink);border:1px solid var(--ink);}
+  .btn-outline:hover{background:var(--ink);color:var(--paper);}
+
+  /* ============ FIXED INCOME ============ */
+  .fi-grid{
+    display:grid;
+    grid-template-columns:340px 1fr;
+    gap:24px;
+  }
+  .bond-display{
+    background:var(--ink);
+    color:var(--paper);
+    padding:28px 32px;
+    margin-bottom:18px;
+    position:relative;
+    overflow:hidden;
+  }
+  .bond-display::after{
+    content:"";position:absolute;top:0;right:0;width:140px;height:140px;
+    background:radial-gradient(circle, rgba(155,34,38,0.4), transparent 70%);
+    transform:translate(40%,-40%);
+  }
+  .bond-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;position:relative;z-index:1;}
+  .bond-block .lbl{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;letter-spacing:0.2em;text-transform:uppercase;
+    color:rgba(244,237,224,0.55);margin-bottom:6px;
+  }
+  .bond-block .val{
+    font-family:'Cormorant Garamond', serif;
+    font-size:42px;font-weight:600;line-height:1;
+  }
+  .bond-block .val small{font-size:18px;color:rgba(244,237,224,0.7);}
+
+  .fi-stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;background:var(--rule);border:1px solid var(--rule);
+  }
+  .fi-stat{background:var(--paper-card);padding:18px 14px;text-align:center;}
+  .fi-stat .lbl{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:9px;letter-spacing:0.15em;text-transform:uppercase;
+    color:var(--ink-soft);margin-bottom:6px;
+  }
+  .fi-stat .val{
+    font-family:'Cormorant Garamond', serif;
+    font-size:24px;font-weight:600;
+  }
+  .fi-stat .val.small{font-size:18px;}
+
+  .chart-box{
+    margin-top:18px;
+    padding:16px;
+    background:var(--paper-card);
+    border:1px solid var(--rule);
+  }
+  .chart-box svg{width:100%;height:280px;display:block;}
+  .chart-title{
+    font-family:'Cormorant Garamond', serif;
+    font-size:18px;font-weight:600;margin-bottom:6px;
+  }
+  .chart-title em{font-style:italic;color:var(--crimson);}
+  .chart-sub{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;letter-spacing:0.15em;text-transform:uppercase;
+    color:var(--ink-soft);margin-bottom:12px;
+  }
+
+  /* ============ FACTOR / REGRESSION ============ */
+  .reg-grid{display:grid;grid-template-columns:340px 1fr;gap:24px;}
+  .reg-stats{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;background:var(--rule);border:1px solid var(--rule);
+    margin-top:18px;
+  }
+  .reg-stat{background:var(--paper-card);padding:18px;text-align:center;}
+  .reg-stat .lbl{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:9px;letter-spacing:0.15em;text-transform:uppercase;
+    color:var(--ink-soft);margin-bottom:6px;
+  }
+  .reg-stat .val{
+    font-family:'Cormorant Garamond', serif;
+    font-size:28px;font-weight:600;
+  }
+  .reg-stat .val.up{color:var(--forest);}
+  .reg-stat .val.down{color:var(--crimson);}
+  .reg-stat .sub{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;color:var(--ink-soft);margin-top:4px;
+  }
+
+  /* ============ CORRELATION HEATMAP ============ */
+  .heat-table{border-collapse:collapse;margin:10px auto;}
+  .heat-table th, .heat-table td{
+    padding:0;
+    width:54px;height:42px;
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    border:1px solid var(--paper);
+  }
+  .heat-table th{
+    background:transparent;color:var(--ink);
+    font-weight:600;border:none;
+    padding:6px 4px;
+    font-size:10px;
+    letter-spacing:0.1em;text-transform:uppercase;
+  }
+  .heat-table tr td:first-child{
+    background:transparent;color:var(--ink);
+    font-weight:600;border:none;
+    text-align:right;padding-right:8px;
+    font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
+    width:auto;
+  }
+
+  /* ============ STRESS TEST ============ */
+  .stress-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:24px;}
+  .scenario-table{width:100%;border-collapse:collapse;margin-top:8px;}
+  .scenario-table th{
+    text-align:left;
+    padding:10px 8px;
+    border-bottom:1px solid var(--ink);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:9px;letter-spacing:0.15em;text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .scenario-table td{
+    padding:11px 8px;
+    border-bottom:1px solid var(--rule-soft);
+    font-size:13px;
+  }
+  .scenario-table .num{
+    font-family:'IBM Plex Mono', monospace;
+    text-align:right;
+    font-weight:600;
+  }
+  .scenario-table .num.up{color:var(--forest);}
+  .scenario-table .num.down{color:var(--crimson);}
+  .scenario-name{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:15px;
+    font-weight:500;
+  }
+  .scenario-tag{
+    display:inline-block;
+    padding:2px 6px;
+    margin-right:8px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:9px;letter-spacing:0.1em;text-transform:uppercase;
+    background:var(--paper-deep);
+    border:1px solid var(--rule);
+    color:var(--ink-soft);
+  }
+  .scenario-tag.severe{background:var(--crimson);color:var(--paper);border-color:var(--crimson);}
+  .scenario-tag.mod{background:var(--ochre);color:var(--paper);border-color:var(--ochre);}
+
+  /* ============ EXOTICS ============ */
+  .exo-grid{display:grid;grid-template-columns:340px 1fr;gap:24px;}
+
+  /* ============ PCA / EIGEN ============ */
+  .pca-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:24px;}
+  .eigen-table{width:100%;border-collapse:collapse;}
+  .eigen-table th, .eigen-table td{
+    padding:8px;
+    text-align:right;
+    border-bottom:1px solid var(--rule-soft);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+  }
+  .eigen-table th{
+    text-align:right;
+    font-size:9px;letter-spacing:0.15em;text-transform:uppercase;
+    color:var(--ink-soft);
+    border-bottom:1px solid var(--ink);
+    font-weight:600;
+  }
+  .eigen-table th:first-child, .eigen-table td:first-child{text-align:left;}
+
+  /* ============ FOOTER ============ */
+  .bylinerow{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-top:48px;
+    padding-top:18px;
+    border-top:3px double var(--ink);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;text-transform:uppercase;letter-spacing:0.18em;
+    color:var(--ink-soft);
+  }
+  .bylinerow em{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;text-transform:none;letter-spacing:0;
+    color:var(--crimson);font-size:14px;
+  }
+
+  .badge{
+    display:inline-block;
+    padding:3px 8px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:9px;letter-spacing:0.15em;text-transform:uppercase;
+    background:var(--paper-deep);color:var(--ink-mid);border:1px solid var(--rule);
+  }
+  .badge.live{background:var(--crimson);color:var(--paper);border-color:var(--crimson);}
+  .badge.live::before{content:"●";margin-right:4px;animation:blink 1.6s infinite;}
+  .badge.new{background:var(--forest);color:var(--paper);border-color:var(--forest);}
+  @keyframes blink{50%{opacity:0.4;}}
+
+  @media (max-width:1024px){
+    .container{padding:20px;}
+    .mh-left h1{font-size:38px;}
+    .fi-grid, .reg-grid, .exo-grid, .pca-grid, .stress-grid{grid-template-columns:1fr;}
+    .fi-stats, .reg-stats{grid-template-columns:repeat(2,1fr);}
+    .bond-row{grid-template-columns:1fr;}
+  }
+
+  ::selection{background:var(--crimson);color:var(--paper);}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- =============== MASTHEAD =============== -->
+  <div class="masthead">
+    <div class="mh-left">
+      <div class="pre">Vol XII · No. 05 · Extended Plug-in Edition</div>
+      <h1>Quant<em>orium</em>.<span class="vol">PLUG-INS</span></h1>
+    </div>
+    <div class="mh-right">
+      <div class="vol">Six advanced research instruments.</div>
+      <div id="todayDate"></div>
+      <div style="margin-top:4px"><span class="badge new">New Release</span></div>
+    </div>
+  </div>
+  <div class="strip">
+    <span>Plug-In Suite VI–XI</span>
+    <span>Companion to the Core Terminal</span>
+    <span>Bonds · Regression · Heatmap · Stress · Exotics · PCA</span>
+  </div>
+
+  <!-- =============== NAV =============== -->
+  <nav class="nav">
+    <button class="active" data-view="bond"><span class="num">VI.</span>Bond Analytics</button>
+    <button data-view="reg"><span class="num">VII.</span>Factor Regression</button>
+    <button data-view="corr"><span class="num">VIII.</span>Correlation Lab</button>
+    <button data-view="stress"><span class="num">IX.</span>Stress Tester</button>
+    <button data-view="exo"><span class="num">X.</span>Exotic Options</button>
+    <button data-view="pca"><span class="num">XI.</span>PCA / Eigen-Risk</button>
+  </nav>
+
+  <!-- ============================================================
+       VI. BOND ANALYTICS
+  ============================================================ -->
+  <section class="view active" id="view-bond">
+    <div class="page-head">
+      <div>
+        <h2>Bond <em>Analytics</em></h2>
+        <div class="lede">Fixed-income valuation engine. Computes clean price, accrued interest, yield-to-maturity (Newton-Raphson root-finding), Macaulay &amp; modified duration, and convexity. India G-Sec defaults supplied.</div>
+      </div>
+      <div class="meta">Plug-in VI<br>Sovereign &amp; Corporate</div>
+    </div>
+
+    <div class="fi-grid">
+      <div class="card">
+        <div class="card-head"><h3>Bond Specification</h3><span class="tag">Inputs</span></div>
+        <div class="field">
+          <label>Face Value <span class="hint">(₹)</span></label>
+          <input type="number" id="bdFace" value="1000">
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Coupon Rate <span class="hint">(% p.a.)</span></label>
+            <input type="number" id="bdCoupon" value="7.10" step="0.05">
+          </div>
+          <div class="field">
+            <label>Market Yield <span class="hint">(YTM %)</span></label>
+            <input type="number" id="bdYield" value="6.85" step="0.05">
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Maturity <span class="hint">(years)</span></label>
+            <input type="number" id="bdMaturity" value="10" step="0.5">
+          </div>
+          <div class="field">
+            <label>Coupon Frequency</label>
+            <select id="bdFreq">
+              <option value="2" selected>Semi-annual</option>
+              <option value="1">Annual</option>
+              <option value="4">Quarterly</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Pre-set</label>
+          <div class="seg seg-3">
+            <div class="seg-opt active" data-bond="gsec">G-Sec 10Y</div>
+            <div class="seg-opt" data-bond="hdfc">HDFC AAA</div>
+            <div class="seg-opt" data-bond="psb">PSB Bond</div>
+          </div>
+        </div>
+        <button class="btn" style="width:100%;margin-top:8px" onclick="runBond()">Recompute</button>
+      </div>
+
+      <div>
+        <div class="bond-display">
+          <div class="bond-row">
+            <div class="bond-block">
+              <div class="lbl">Bond Price (Clean)</div>
+              <div class="val"><small>₹</small><span id="bdPrice">—</span></div>
+            </div>
+            <div class="bond-block">
+              <div class="lbl">Yield to Maturity</div>
+              <div class="val"><span id="bdYTM">—</span><small>%</small></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="fi-stats">
+          <div class="fi-stat">
+            <div class="lbl">Macaulay Duration</div>
+            <div class="val" id="bdMacDur">—</div>
+          </div>
+          <div class="fi-stat">
+            <div class="lbl">Modified Duration</div>
+            <div class="val" id="bdModDur">—</div>
+          </div>
+          <div class="fi-stat">
+            <div class="lbl">Convexity</div>
+            <div class="val" id="bdConv">—</div>
+          </div>
+          <div class="fi-stat">
+            <div class="lbl">DV01 (Per ₹100 par)</div>
+            <div class="val small" id="bdDV01">—</div>
+          </div>
+        </div>
+
+        <div class="chart-box">
+          <div class="chart-title">Price–Yield <em>Sensitivity</em></div>
+          <div class="chart-sub">Bond price as a function of yield · convex relationship</div>
+          <svg id="bondCurve" viewBox="0 0 700 280" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       VII. FACTOR REGRESSION (CAPM / Multi-Factor)
+  ============================================================ -->
+  <section class="view" id="view-reg">
+    <div class="page-head">
+      <div>
+        <h2>Factor <em>Regression</em></h2>
+        <div class="lede">CAPM-style and multi-factor regression engine. Compute α (Jensen), β (market exposure), R², t-statistics, and information ratio against a synthetic NIFTY benchmark — paste your own daily returns or use the supplied dataset.</div>
+      </div>
+      <div class="meta">Plug-in VII<br>OLS · Single-factor</div>
+    </div>
+
+    <div class="reg-grid">
+      <div class="card">
+        <div class="card-head"><h3>Inputs</h3><span class="tag">Returns Series</span></div>
+
+        <div class="field">
+          <label>Asset</label>
+          <div class="seg seg-3">
+            <div class="seg-opt active" data-asset="rel">RELIANCE</div>
+            <div class="seg-opt" data-asset="bajaj">BAJFIN</div>
+            <div class="seg-opt" data-asset="itc">ITC</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Lookback Period</label>
+          <select id="regPeriod">
+            <option value="252" selected>252 days (1Y)</option>
+            <option value="126">126 days (6M)</option>
+            <option value="504">504 days (2Y)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Risk-Free Rate <span class="hint">(% p.a.)</span></label>
+          <input type="number" id="regRf" value="6.85" step="0.05">
+        </div>
+        <div class="field">
+          <label>Custom Returns <span class="hint">(comma-separated, optional)</span></label>
+          <textarea id="regCustom" placeholder="0.012, -0.008, 0.005, …"></textarea>
+        </div>
+        <button class="btn" style="width:100%" onclick="runRegression()">Run OLS Regression</button>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-head"><h3>Regression <em>Output</em></h3><span class="tag">y = α + β·x + ε</span></div>
+
+          <div class="reg-stats">
+            <div class="reg-stat">
+              <div class="lbl">Alpha (α)</div>
+              <div class="val" id="rAlpha">—</div>
+              <div class="sub" id="rAlphaSub">annualised</div>
+            </div>
+            <div class="reg-stat">
+              <div class="lbl">Beta (β)</div>
+              <div class="val" id="rBeta">—</div>
+              <div class="sub" id="rBetaSub">market exposure</div>
+            </div>
+            <div class="reg-stat">
+              <div class="lbl">R²</div>
+              <div class="val" id="rR2">—</div>
+              <div class="sub" id="rR2Sub">goodness of fit</div>
+            </div>
+            <div class="reg-stat">
+              <div class="lbl">t-stat (β)</div>
+              <div class="val" id="rTstat">—</div>
+              <div class="sub" id="rTstatSub">significance</div>
+            </div>
+            <div class="reg-stat">
+              <div class="lbl">Std Err (β)</div>
+              <div class="val" id="rSE">—</div>
+              <div class="sub">standard error</div>
+            </div>
+            <div class="reg-stat">
+              <div class="lbl">Info Ratio</div>
+              <div class="val" id="rIR">—</div>
+              <div class="sub">α / σ(ε)</div>
+            </div>
+          </div>
+
+          <div class="chart-box" style="margin-top:18px">
+            <div class="chart-title">Scatter <em>+</em> Regression Line</div>
+            <div class="chart-sub">Asset excess return vs market excess return · OLS fit</div>
+            <svg id="regChart" viewBox="0 0 700 320" preserveAspectRatio="none"></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       VIII. CORRELATION LAB
+  ============================================================ -->
+  <section class="view" id="view-corr">
+    <div class="page-head">
+      <div>
+        <h2>Correlation <em>Laboratory</em></h2>
+        <div class="lede">Pairwise correlation heatmap across an 8-asset NSE universe (large-cap, mid-cap, sectoral). Includes rolling 60-day correlation between any pair and detects regime breaks via the Z-score of the correlation series.</div>
+      </div>
+      <div class="meta">Plug-in VIII<br>Pearson · Rolling</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Pairwise <em>Correlation Matrix</em></h3><span class="tag">8 × 8</span></div>
+      <div style="overflow-x:auto;">
+        <div id="heatmapWrap" style="display:flex;justify-content:center;"></div>
+      </div>
+      <div style="text-align:center;margin-top:14px;">
+        <span class="badge" style="background:#9b2226;color:white;border-color:#9b2226;">−1 (anti)</span>
+        <span class="badge" style="background:#ebe2cf;">0</span>
+        <span class="badge" style="background:#3d5a3a;color:white;border-color:#3d5a3a;">+1 (perfect)</span>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px;">
+      <div class="card-head"><h3>Rolling Correlation <em>Inspector</em></h3><span class="tag">60-day window</span></div>
+      <div class="row-2">
+        <div class="field">
+          <label>Asset A</label>
+          <select id="corrA">
+            <option>RELIANCE</option><option>TCS</option><option>HDFCBANK</option><option>INFY</option>
+            <option>BAJFINANCE</option><option>SUNPHARMA</option><option>MARUTI</option><option>ITC</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Asset B</label>
+          <select id="corrB">
+            <option>RELIANCE</option><option selected>TCS</option><option>HDFCBANK</option><option>INFY</option>
+            <option>BAJFINANCE</option><option>SUNPHARMA</option><option>MARUTI</option><option>ITC</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-outline" onclick="runRollingCorr()">Compute Rolling Correlation</button>
+      <div class="chart-box" style="margin-top:14px;">
+        <div class="chart-title">Rolling Pearson <em>ρ</em></div>
+        <div class="chart-sub">60-day window · regime breaks shaded</div>
+        <svg id="rollCorrChart" viewBox="0 0 800 220" preserveAspectRatio="none" style="height:220px"></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       IX. STRESS TESTER
+  ============================================================ -->
+  <section class="view" id="view-stress">
+    <div class="page-head">
+      <div>
+        <h2>Scenario &amp; <em>Stress Tester</em></h2>
+        <div class="lede">Apply six historical and hypothetical macro shocks to a configurable equity-bond portfolio. Computes mark-to-market loss, recovery time estimate, and worst-asset attribution under each scenario.</div>
+      </div>
+      <div class="meta">Plug-in IX<br>Historical · Hypothetical</div>
+    </div>
+
+    <div class="stress-grid">
+      <div>
+        <div class="card">
+          <div class="card-head"><h3>Portfolio Setup</h3><span class="tag">Allocation</span></div>
+          <div class="row-2">
+            <div class="field">
+              <label>Total AUM <span class="hint">(₹ Cr)</span></label>
+              <input type="number" id="stAUM" value="10" step="0.5">
+            </div>
+            <div class="field">
+              <label>Equity %</label>
+              <input type="number" id="stEqPct" value="60" step="5" min="0" max="100">
+            </div>
+          </div>
+          <div class="row-2">
+            <div class="field">
+              <label>G-Sec %</label>
+              <input type="number" id="stGsecPct" value="25" step="5">
+            </div>
+            <div class="field">
+              <label>Corp Bond %</label>
+              <input type="number" id="stCorpPct" value="10" step="5">
+            </div>
+          </div>
+          <div class="row-2">
+            <div class="field">
+              <label>Gold %</label>
+              <input type="number" id="stGoldPct" value="5" step="5">
+            </div>
+            <div class="field">
+              <label>Cash %</label>
+              <input type="number" id="stCashPct" value="0" step="5">
+            </div>
+          </div>
+          <button class="btn" style="width:100%" onclick="runStress()">Apply All Scenarios</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>Scenario <em>P/L Matrix</em></h3><span class="tag">Mark-to-Market</span></div>
+        <table class="scenario-table">
+          <thead>
+            <tr>
+              <th>Scenario</th>
+              <th style="text-align:right">P/L (₹)</th>
+              <th style="text-align:right">% of AUM</th>
+              <th>Worst Asset</th>
+            </tr>
+          </thead>
+          <tbody id="stressBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="chart-box" style="margin-top:18px">
+      <div class="chart-title">Loss <em>Distribution</em> Across Scenarios</div>
+      <div class="chart-sub">Bar height = loss in ₹ Lakhs · severity colour-coded</div>
+      <svg id="stressChart" viewBox="0 0 800 280" preserveAspectRatio="none"></svg>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       X. EXOTIC OPTIONS
+  ============================================================ -->
+  <section class="view" id="view-exo">
+    <div class="page-head">
+      <div>
+        <h2>Exotic <em>Options Pricer</em></h2>
+        <div class="lede">Monte Carlo valuation of path-dependent payoffs: Asian (arithmetic average), Barrier (knock-in / knock-out), Lookback (max-min), and Digital (binary cash-or-nothing). Variance-reduction via antithetic variates.</div>
+      </div>
+      <div class="meta">Plug-in X<br>Path-dependent · MC</div>
+    </div>
+
+    <div class="exo-grid">
+      <div class="card">
+        <div class="card-head"><h3>Specification</h3><span class="tag">Inputs</span></div>
+        <div class="field">
+          <label>Exotic Type</label>
+          <select id="exoType">
+            <option value="asian">Asian — Arithmetic Avg</option>
+            <option value="barrier-uo">Barrier — Up &amp; Out Call</option>
+            <option value="barrier-di">Barrier — Down &amp; In Put</option>
+            <option value="lookback">Lookback — Floating Strike</option>
+            <option value="digital">Digital — Cash-or-Nothing</option>
+          </select>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Spot (S₀)</label>
+            <input type="number" id="exoSpot" value="2450">
+          </div>
+          <div class="field">
+            <label>Strike (K)</label>
+            <input type="number" id="exoStrike" value="2500">
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Volatility <span class="hint">(σ %)</span></label>
+            <input type="number" id="exoVol" value="22" step="0.5">
+          </div>
+          <div class="field">
+            <label>Maturity <span class="hint">(yr)</span></label>
+            <input type="number" id="exoT" value="0.5" step="0.05">
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Risk-Free Rate <span class="hint">(%)</span></label>
+            <input type="number" id="exoRate" value="6.85" step="0.05">
+          </div>
+          <div class="field">
+            <label>Barrier <span class="hint">(if applicable)</span></label>
+            <input type="number" id="exoBarrier" value="2700">
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>MC Paths</label>
+            <input type="number" id="exoPaths" value="5000" step="500">
+          </div>
+          <div class="field">
+            <label>Steps / path</label>
+            <input type="number" id="exoSteps" value="120" step="10">
+          </div>
+        </div>
+        <button class="btn" style="width:100%" onclick="runExotic()">Price Exotic →</button>
+      </div>
+
+      <div>
+        <div class="bond-display">
+          <div class="bond-row">
+            <div class="bond-block">
+              <div class="lbl">Exotic Premium</div>
+              <div class="val"><small>₹</small><span id="exoPrice">—</span></div>
+            </div>
+            <div class="bond-block">
+              <div class="lbl">Standard Error</div>
+              <div class="val"><small>±</small><span id="exoSE">—</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="fi-stats" style="grid-template-columns:repeat(3,1fr);">
+          <div class="fi-stat">
+            <div class="lbl">Vanilla Equivalent</div>
+            <div class="val small" id="exoVanilla">—</div>
+          </div>
+          <div class="fi-stat">
+            <div class="lbl">Premium Difference</div>
+            <div class="val small" id="exoDiff">—</div>
+          </div>
+          <div class="fi-stat">
+            <div class="lbl">Knock Probability</div>
+            <div class="val small" id="exoKnock">—</div>
+          </div>
+        </div>
+
+        <div class="chart-box">
+          <div class="chart-title">Sample Paths <em>+</em> Payoff</div>
+          <div class="chart-sub">Crimson lines = paths that produced positive payoff at expiry</div>
+          <svg id="exoChart" viewBox="0 0 700 280" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       XI. PCA / EIGEN-RISK
+  ============================================================ -->
+  <section class="view" id="view-pca">
+    <div class="page-head">
+      <div>
+        <h2>PCA <em>&amp;</em> Eigen-Risk</h2>
+        <div class="lede">Principal-component decomposition of the portfolio covariance matrix. Identifies the systematic factors driving variance and quantifies the share of risk attributable to each principal component.</div>
+      </div>
+      <div class="meta">Plug-in XI<br>Spectral decomposition</div>
+    </div>
+
+    <div class="pca-grid">
+      <div class="card">
+        <div class="card-head"><h3>Eigen<em>values</em></h3><span class="tag">Sorted descending</span></div>
+        <table class="eigen-table" id="eigenTable">
+          <thead>
+            <tr>
+              <th>PC</th>
+              <th>λ (variance)</th>
+              <th>%</th>
+              <th>Cumulative %</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <div style="margin-top:18px;padding:14px;background:var(--paper);border:1px solid var(--rule);">
+          <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--ink);margin-bottom:6px">Interpretation</div>
+          <div style="font-size:12px;color:var(--ink-mid);line-height:1.6" id="pcaInterp">—</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-head"><h3>Scree <em>Plot</em></h3><span class="tag">Variance Explained</span></div>
+          <svg id="screePlot" viewBox="0 0 700 280" preserveAspectRatio="none" style="width:100%;height:280px;"></svg>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <div class="card-head"><h3>PC<em>1</em> &amp; PC<em>2</em> Loadings</h3><span class="tag">Asset weights</span></div>
+          <svg id="loadingsChart" viewBox="0 0 700 240" preserveAspectRatio="none" style="width:100%;height:240px;"></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="bylinerow">
+    <span>Quantorium Plug-In Suite</span>
+    <span><em>"Tools sharpen tools."</em></span>
+    <span>Bengaluru · MMXXVI</span>
+  </div>
+</div>
+
+<script>
+/* =============================================================
+   COMMON UTILS
+============================================================= */
+const dateOpts = {weekday:'long', day:'numeric', month:'long', year:'numeric'};
+document.getElementById('todayDate').textContent =
+  new Date().toLocaleDateString('en-GB', dateOpts).toUpperCase();
+
+document.querySelectorAll('.nav button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+  });
+});
+
+// Box-Muller normal sampler
+function randn(){
+  const u=1-Math.random(), v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+const mean = a => a.reduce((s,x)=>s+x,0)/a.length;
+const stdev = a => { const m=mean(a); return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1)); }
+const stdevPop = a => { const m=mean(a); return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/a.length); }
+const dot = (a,b) => a.reduce((s,x,i)=>s+x*b[i],0);
+function normCDF(x){
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const sign=x<0?-1:1; x=Math.abs(x)/Math.sqrt(2);
+  const t=1.0/(1.0+p*x);
+  const y=1.0-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return 0.5*(1.0+sign*y);
+}
+function normPDF(x){return Math.exp(-0.5*x*x)/Math.sqrt(2*Math.PI);}
+
+// generic SVG helpers
+function svgEl(tag, attrs={}){
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for(const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+
+/* =============================================================
+   VI. BOND ANALYTICS
+============================================================= */
+function bondPrice(face, couponRate, ytm, yearsToMaturity, freq){
+  const n = Math.round(yearsToMaturity * freq);
+  const c = (couponRate/100/freq) * face;
+  const y = ytm/100/freq;
+  let pv = 0;
+  for(let i=1;i<=n;i++) pv += c/Math.pow(1+y, i);
+  pv += face/Math.pow(1+y, n);
+  return pv;
+}
+
+function bondYTM(face, couponRate, price, yearsToMaturity, freq){
+  // Newton-Raphson
+  let y = couponRate/100;
+  const n = Math.round(yearsToMaturity * freq);
+  const c = (couponRate/100/freq) * face;
+  for(let it=0; it<60; it++){
+    const yi = y/freq;
+    let p=0, dp=0;
+    for(let i=1;i<=n;i++){
+      const df = Math.pow(1+yi, i);
+      p += c/df;
+      dp += -i*c/(df*(1+yi));
+    }
+    p += face/Math.pow(1+yi, n);
+    dp += -n*face/(Math.pow(1+yi, n)*(1+yi));
+    const f = p - price;
+    const fp = dp/freq;
+    if(Math.abs(fp)<1e-10) break;
+    const yNew = y - f/fp;
+    if(Math.abs(yNew-y)<1e-9) { y=yNew; break; }
+    y = yNew;
+  }
+  return y*100;
+}
+
+function bondAnalytics(face, couponRate, ytm, yearsToMaturity, freq){
+  const n = Math.round(yearsToMaturity * freq);
+  const c = (couponRate/100/freq) * face;
+  const y = ytm/100/freq;
+  let price=0, weighted=0, convexNum=0;
+  for(let i=1;i<=n;i++){
+    const t = i/freq;
+    const cf = (i===n) ? c+face : c;
+    const pv = cf/Math.pow(1+y, i);
+    price += pv;
+    weighted += t * pv;
+    convexNum += t*(t+1/freq) * pv / Math.pow(1+y,2);
+  }
+  const macDur = weighted/price;
+  const modDur = macDur/(1+y);
+  const convexity = convexNum/price;
+  // DV01 — change in price per 1bp = -ModDur * Price * 0.0001 * (100/face) for per ₹100 par
+  const dv01 = modDur * price * 0.0001 * (100/face);
+  return {price, macDur, modDur, convexity, dv01};
+}
+
+function runBond(){
+  const face = +document.getElementById('bdFace').value;
+  const c = +document.getElementById('bdCoupon').value;
+  const ytm = +document.getElementById('bdYield').value;
+  const T = +document.getElementById('bdMaturity').value;
+  const freq = +document.getElementById('bdFreq').value;
+
+  const a = bondAnalytics(face, c, ytm, T, freq);
+  document.getElementById('bdPrice').textContent = a.price.toFixed(2);
+  document.getElementById('bdYTM').textContent = ytm.toFixed(3);
+  document.getElementById('bdMacDur').textContent = a.macDur.toFixed(3);
+  document.getElementById('bdModDur').textContent = a.modDur.toFixed(3);
+  document.getElementById('bdConv').textContent = a.convexity.toFixed(2);
+  document.getElementById('bdDV01').textContent = '₹' + a.dv01.toFixed(4);
+
+  drawBondCurve(face, c, T, freq, ytm);
+}
+
+function drawBondCurve(face, c, T, freq, currentY){
+  const svg = document.getElementById('bondCurve');
+  svg.innerHTML='';
+  const W=700, H=280, pad={t:18, r:18, b:30, l:60};
+  const ys = [];
+  for(let y=Math.max(0.1,currentY-5); y<=currentY+5; y+=0.25) ys.push(y);
+  const ps = ys.map(y => bondPrice(face,c,y,T,freq));
+  const xMin=ys[0], xMax=ys[ys.length-1];
+  const yMin=Math.min(...ps), yMax=Math.max(...ps);
+  const xs2 = x => pad.l + (x-xMin)/(xMax-xMin)*(W-pad.l-pad.r);
+  const ys2 = v => H-pad.b - (v-yMin)/(yMax-yMin)*(H-pad.t-pad.b);
+
+  for(let i=0;i<=4;i++){
+    const yy = pad.t + i*(H-pad.t-pad.b)/4;
+    svg.appendChild(svgEl('line',{x1:pad.l,x2:W-pad.r,y1:yy,y2:yy,stroke:'#d6cdb8','stroke-dasharray':'2,4'}));
+    const t = svgEl('text',{x:pad.l-6,y:yy+3,'text-anchor':'end','font-family':'IBM Plex Mono','font-size':10,fill:'#6b665d'});
+    t.textContent = (yMax - i*(yMax-yMin)/4).toFixed(0);
+    svg.appendChild(t);
+  }
+
+  // curve
+  let d = 'M ' + xs2(ys[0]) + ' ' + ys2(ps[0]);
+  for(let i=1;i<ys.length;i++) d += ' L ' + xs2(ys[i]) + ' ' + ys2(ps[i]);
+  svg.appendChild(svgEl('path',{d,fill:'none',stroke:'#9b2226','stroke-width':2.4}));
+
+  // current YTM marker
+  const cx = xs2(currentY), cy = ys2(bondPrice(face,c,currentY,T,freq));
+  svg.appendChild(svgEl('line',{x1:cx,x2:cx,y1:pad.t,y2:H-pad.b,stroke:'#1a1a1a','stroke-dasharray':'3,3'}));
+  svg.appendChild(svgEl('circle',{cx,cy,r:5,fill:'#1a1a1a'}));
+  const lbl = svgEl('text',{x:cx+6,y:cy-8,'font-family':'IBM Plex Mono','font-size':10,fill:'#1a1a1a'});
+  lbl.textContent = 'YTM ' + currentY.toFixed(2) + '% → ₹' + bondPrice(face,c,currentY,T,freq).toFixed(2);
+  svg.appendChild(lbl);
+
+  // x labels
+  for(let i=0;i<=5;i++){
+    const x = xMin + i*(xMax-xMin)/5;
+    const t = svgEl('text',{x:xs2(x),y:H-pad.b+16,'text-anchor':'middle','font-family':'IBM Plex Mono','font-size':10,fill:'#6b665d'});
+    t.textContent = x.toFixed(1)+'%';
+    svg.appendChild(t);
+  }
+
+  // axis labels
+  const xa = svgEl('text',{x:W/2,y:H-2,'text-anchor':'middle','font-family':'Cormorant Garamond','font-style':'italic','font-size':12,fill:'#6b665d'});
+  xa.textContent = 'yield to maturity';
+  svg.appendChild(xa);
+}
+
+document.querySelectorAll('[data-bond]').forEach(o=>{
+  o.addEventListener('click',()=>{
+    document.querySelectorAll('[data-bond]').forEach(x=>x.classList.remove('active'));
+    o.classList.add('active');
+    const presets = {
+      gsec:  {coupon:7.10, ytm:6.85, mat:10},
+      hdfc:  {coupon:8.20, ytm:7.65, mat:5},
+      psb:   {coupon:9.05, ytm:8.40, mat:7},
+    };
+    const p = presets[o.dataset.bond];
+    document.getElementById('bdCoupon').value = p.coupon;
+    document.getElementById('bdYield').value = p.ytm;
+    document.getElementById('bdMaturity').value = p.mat;
+    runBond();
+  });
+});
+
+['bdFace','bdCoupon','bdYield','bdMaturity','bdFreq'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', runBond);
+});
+runBond();
+
+/* =============================================================
+   VII. FACTOR REGRESSION (OLS)
+============================================================= */
+// Generate correlated returns: market + asset
+function genReturns(n, beta, alphaAnn, sigEpsAnn){
+  // market returns ~ N(0.10/252, (0.18/sqrt(252))^2)
+  const mktMu = 0.10/252, mktSig = 0.18/Math.sqrt(252);
+  const epsSig = sigEpsAnn/Math.sqrt(252);
+  const alphaDaily = alphaAnn/252;
+  const mkt = [], asset = [];
+  for(let i=0;i<n;i++){
+    const m = mktMu + mktSig*randn();
+    const e = epsSig*randn();
+    mkt.push(m);
+    asset.push(alphaDaily + beta*m + e);
+  }
+  return {mkt, asset};
+}
+
+let regAsset = 'rel';
+const assetCfg = {
+  rel:    {beta:1.05, alpha:0.04, eps:0.18, name:'RELIANCE'},
+  bajaj:  {beta:1.45, alpha:0.07, eps:0.28, name:'BAJFINANCE'},
+  itc:    {beta:0.65, alpha:0.02, eps:0.14, name:'ITC'},
+};
+
+function runRegression(){
+  const cfg = assetCfg[regAsset];
+  const n = +document.getElementById('regPeriod').value;
+  const Rf = +document.getElementById('regRf').value/100;
+
+  // optional custom data
+  const customRaw = document.getElementById('regCustom').value.trim();
+  let mkt, asset;
+  if(customRaw){
+    const arr = customRaw.split(/[,\s\n]+/).filter(Boolean).map(Number).filter(x=>!isNaN(x));
+    if(arr.length>=20){
+      asset = arr;
+      const g = genReturns(arr.length, 1.0, 0, 0.18);
+      mkt = g.mkt;
+    } else {
+      const g = genReturns(n, cfg.beta, cfg.alpha, cfg.eps);
+      mkt = g.mkt; asset = g.asset;
+    }
+  } else {
+    const g = genReturns(n, cfg.beta, cfg.alpha, cfg.eps);
+    mkt = g.mkt; asset = g.asset;
+  }
+
+  const dailyRf = Rf/252;
+  const x = mkt.map(r => r - dailyRf);
+  const y = asset.map(r => r - dailyRf);
+  const N = x.length;
+  const xb = mean(x), yb = mean(y);
+  let sxx=0, sxy=0, syy=0;
+  for(let i=0;i<N;i++){ sxx+=(x[i]-xb)**2; sxy+=(x[i]-xb)*(y[i]-yb); syy+=(y[i]-yb)**2; }
+  const beta = sxy/sxx;
+  const alphaDaily = yb - beta*xb;
+  const yhat = x.map(xi => alphaDaily + beta*xi);
+  const residuals = y.map((yi,i) => yi - yhat[i]);
+  const ssRes = residuals.reduce((s,r)=>s+r*r,0);
+  const ssTot = syy;
+  const r2 = 1 - ssRes/ssTot;
+  const sigma2 = ssRes/(N-2);
+  const seBeta = Math.sqrt(sigma2/sxx);
+  const tStat = beta/seBeta;
+  const alphaAnn = alphaDaily * 252;
+  const trackingError = stdev(residuals) * Math.sqrt(252);
+  const ir = alphaAnn / Math.max(trackingError, 1e-9);
+
+  document.getElementById('rAlpha').textContent = (alphaAnn*100).toFixed(2)+'%';
+  document.getElementById('rAlpha').className = 'val ' + (alphaAnn>=0?'up':'down');
+  document.getElementById('rBeta').textContent = beta.toFixed(3);
+  document.getElementById('rBetaSub').textContent = beta>1 ? 'aggressive' : beta<1 ? 'defensive' : 'neutral';
+  document.getElementById('rR2').textContent = (r2*100).toFixed(1)+'%';
+  document.getElementById('rR2Sub').textContent = r2>0.7 ? 'strong fit' : r2>0.4 ? 'moderate' : 'weak';
+  document.getElementById('rTstat').textContent = tStat.toFixed(2);
+  document.getElementById('rTstat').className = 'val ' + (Math.abs(tStat)>1.96?'up':'down');
+  document.getElementById('rTstatSub').textContent = Math.abs(tStat)>1.96 ? 'significant @ 5%' : 'not significant';
+  document.getElementById('rSE').textContent = seBeta.toFixed(4);
+  document.getElementById('rIR').textContent = ir.toFixed(3);
+
+  drawRegressionScatter(x, y, alphaDaily, beta);
+}
+
+function drawRegressionScatter(x, y, a, b){
+  const svg = document.getElementById('regChart');
+  svg.innerHTML='';
+  const W=700, H=320, pad={t:18, r:18, b:34, l:54};
+  const xMin=Math.min(...x), xMax=Math.max(...x);
+  const yMin=Math.min(...y), yMax=Math.max(...y);
+  const xs2 = v => pad.l + (v-xMin)/(xMax-xMin)*(W-pad.l-pad.r);
+  const ys2 = v => H-pad.b - (v-yMin)/(yMax-yMin)*(H-pad.t-pad.b);
+
+  // grid
+  for(let i=0;i<=4;i++){
+    const yy = pad.t + i*(H-pad.t-pad.b)/4;
+    svg.appendChild(svgEl('line',{x1:pad.l,x2:W-pad.r,y1:yy,y2:yy,stroke:'#e3dac4','stroke-dasharray':'2,4'}));
+  }
+  // axes
+  svg.appendChild(svgEl('line',{x1:pad.l,x2:W-pad.r,y1:ys2(0),y2:ys2(0),stroke:'#1a1a1a','stroke-width':1}));
+  svg.appendChild(svgEl('line',{x1:xs2(0),x2:xs2(0),y1:pad.t,y2:H-pad.b,stroke:'#1a1a1a','stroke-width':1}));
+
+  // points
+  for(let i=0;i<x.length;i++){
+    svg.appendChild(svgEl('circle',{cx:xs2(x[i]),cy:ys2(y[i]),r:2.2,fill:'#3d5a3a',opacity:0.5}));
+  }
+
+  // regression line
+  const x1 = xMin, x2 = xMax;
+  svg.appendChild(svgEl('line',{x1:xs2(x1),y1:ys2(a+b*x1),x2:xs2(x2),y2:ys2(a+b*x2),stroke:'#9b2226','stroke-width':2.4}));
+
+  // axis labels
+  const xa = svgEl('text',{x:W/2,y:H-4,'text-anchor':'middle','font-family':'Cormorant Garamond','font-style':'italic','font-size':12,fill:'#6b665d'});
+  xa.textContent = 'market excess return';
+  svg.appendChild(xa);
+  const ya = svgEl('text',{x:14,y:H/2,'text-anchor':'middle','font-family':'Cormorant Garamond','font-style':'italic','font-size':12,fill:'#6b665d',transform:`rotate(-90 14 ${H/2})`});
+  ya.textContent = 'asset excess return';
+  svg.appendChild(ya);
+}
+
+document.querySelectorAll('[data-asset]').forEach(o=>{
+  o.addEventListener('click',()=>{
+    document.querySelectorAll('[data-asset]').forEach(x=>x.classList.remove('active'));
+    o.classList.add('active');
+    regAsset = o.dataset.asset;
+    runRegression();
+  });
+});
+['regPeriod','regRf'].forEach(id => document.getElementById(id).addEventListener('input', runRegression));
+runRegression();
+
+/* =============================================================
+   VIII. CORRELATION LAB
+============================================================= */
+const corrUniverse = ['RELIANCE','TCS','HDFCBANK','INFY','BAJFINANCE','SUNPHARMA','MARUTI','ITC'];
+// realistic synthetic correlation matrix (symmetric, PSD-ish)
+const corrMatrix = [
+  [1.00, 0.42, 0.55, 0.38, 0.48, 0.22, 0.35, 0.30],
+  [0.42, 1.00, 0.40, 0.78, 0.32, 0.20, 0.28, 0.25],
+  [0.55, 0.40, 1.00, 0.36, 0.62, 0.25, 0.42, 0.32],
+  [0.38, 0.78, 0.36, 1.00, 0.30, 0.18, 0.26, 0.22],
+  [0.48, 0.32, 0.62, 0.30, 1.00, 0.20, 0.45, 0.28],
+  [0.22, 0.20, 0.25, 0.18, 0.20, 1.00, 0.18, 0.32],
+  [0.35, 0.28, 0.42, 0.26, 0.45, 0.18, 1.00, 0.30],
+  [0.30, 0.25, 0.32, 0.22, 0.28, 0.32, 0.30, 1.00],
+];
+
+function corrColor(rho){
+  // diverging palette: -1 = crimson, 0 = paper, +1 = forest
+  if(rho>0){
+    const t = rho;
+    const r = Math.round(235 - t*(235-61));
+    const g = Math.round(226 - t*(226-90));
+    const b = Math.round(207 - t*(207-58));
+    return `rgb(${r},${g},${b})`;
+  } else {
+    const t = -rho;
+    const r = Math.round(235 - t*(235-155));
+    const g = Math.round(226 - t*(226-34));
+    const b = Math.round(207 - t*(207-38));
+    return `rgb(${r},${g},${b})`;
+  }
+}
+
+function renderHeatmap(){
+  const wrap = document.getElementById('heatmapWrap');
+  let html = '<table class="heat-table"><thead><tr><th></th>';
+  for(const a of corrUniverse) html += `<th>${a.slice(0,5)}</th>`;
+  html += '</tr></thead><tbody>';
+  for(let i=0;i<corrUniverse.length;i++){
+    html += `<tr><td>${corrUniverse[i].slice(0,5)}</td>`;
+    for(let j=0;j<corrUniverse.length;j++){
+      const v = corrMatrix[i][j];
+      const fc = Math.abs(v) > 0.5 ? '#fff' : '#1a1a1a';
+      html += `<td style="background:${corrColor(v)};color:${fc}">${v.toFixed(2)}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+renderHeatmap();
+
+function runRollingCorr(){
+  // synthesize daily returns for two assets with time-varying correlation
+  const n = 252*2;
+  const data = [];
+  for(let i=0;i<n;i++){
+    // base correlation oscillates and has a regime break around i=300
+    const baseRho = 0.4 + 0.3*Math.sin(i/60) + (i>300 ? 0.2 : -0.1);
+    const z1 = randn(), z2 = randn();
+    const r1 = 0.012*z1;
+    const r2 = 0.014*(baseRho*z1 + Math.sqrt(1-baseRho*baseRho)*z2);
+    data.push([r1, r2]);
+  }
+  // rolling 60-day correlation
+  const W = 60;
+  const rolls = [];
+  for(let i=W; i<n; i++){
+    const a = [], b = [];
+    for(let k=i-W;k<i;k++){ a.push(data[k][0]); b.push(data[k][1]); }
+    const ma=mean(a), mb=mean(b);
+    let sab=0, saa=0, sbb=0;
+    for(let k=0;k<W;k++){
+      sab += (a[k]-ma)*(b[k]-mb);
+      saa += (a[k]-ma)**2;
+      sbb += (b[k]-mb)**2;
+    }
+    rolls.push(sab/Math.sqrt(saa*sbb));
+  }
+
+  // detect regime breaks via z-score of differenced series
+  const breaks = [];
+  for(let i=20;i<rolls.length-1;i++){
+    const lhs = rolls.slice(i-20, i);
+    const sd = stdev(lhs)+1e-9, mu=mean(lhs);
+    if(Math.abs((rolls[i]-mu)/sd) > 2.5) breaks.push(i);
+  }
+
+  drawRollCorr(rolls, breaks);
+}
+
+function drawRollCorr(rolls, breaks){
+  const svg = document.getElementById('rollCorrChart');
+  svg.innerHTML='';
+  const W=800, H=220, pad={t:14, r:14, b:24, l:50};
+  const N = rolls.length;
+  const yMin = -1, yMax = 1;
+  const xs2 = i => pad.l + i*(W-pad.l-pad.r)/(N-1);
+  const ys2 = v => H-pad.b - (v-yMin)/(yMax-yMin)*(H-pad.t-pad.b);
+
+  // shade regime breaks
+  breaks.forEach(b=>{
+    svg.appendChild(svgEl('rect',{x:xs2(b)-3, y:pad.t, width:6, height:H-pad.t-pad.b, fill:'#9b2226', opacity:0.18}));
+  });
+
+  // grid
+  for(let i=0;i<=4;i++){
+    const yy = pad.t + i*(H-pad.t-pad.b)/4;
+    svg.appendChild(svgEl('line',{x1:pad.l,x2:W-pad.r,y1:yy,y2:yy,stroke:'#e3dac4','stroke-dasharray':'2,4'}));
+    const v = yMax - i*(yMax-yMin)/4;
+    const t = svgEl('text',{x:pad.l-6,y:yy+3,'text-anchor':'end','font-family':'IBM Plex Mono','font-size':10,fill:'#6b665d'});
+    t.textContent = v.toFixed(1);
+    svg.appendChild(t);
+  }
+
+  // zero line
+  svg.appendChild(svgEl('line',{x1:pad.l,x2:W-pad.r,y1:ys2(0),y2:ys2(0),stroke:'#1a1a1a','stroke-width':1}));
+
+  // line
+  let d = 'M ' + xs2(0) + ' ' + ys2(rolls[0]);
+  for(let i=1;i<N;i++) d += ' L ' + xs2(i) + ' ' + ys2(rolls[i]);
+  svg.appendChild(svgEl('path',{d,fill:'none',stroke:'#9b2226','stroke-width':2}));
+}
+runRollingCorr();
+
+/* =============================================================
+   IX. STRESS TESTER
+============================================================= */
+// Each scenario: shock to {equity, gsec, corp, gold, cash}
+const scenarios = [
+  {name:'2008 Global Financial Crisis', tag:'severe', shocks:{eq:-0.55, gsec:+0.08, corp:-0.18, gold:+0.06, cash:0}, worst:'Equity'},
+  {name:'2020 COVID-19 Crash',          tag:'severe', shocks:{eq:-0.38, gsec:+0.04, corp:-0.10, gold:+0.12, cash:0}, worst:'Equity'},
+  {name:'2013 Taper Tantrum',           tag:'mod',    shocks:{eq:-0.12, gsec:-0.08, corp:-0.06, gold:-0.04, cash:0}, worst:'G-Sec'},
+  {name:'Rate Hike +200bps',            tag:'mod',    shocks:{eq:-0.08, gsec:-0.14, corp:-0.10, gold:-0.03, cash:0}, worst:'G-Sec'},
+  {name:'Oil Shock (+50%)',             tag:'mod',    shocks:{eq:-0.10, gsec:-0.04, corp:-0.05, gold:+0.05, cash:0}, worst:'Equity'},
+  {name:'INR Devaluation -15%',         tag:'',       shocks:{eq:-0.06, gsec:-0.05, corp:-0.04, gold:+0.10, cash:0}, worst:'G-Sec'},
+];
+
+function runStress(){
+  const aum = +document.getElementById('stAUM').value * 1e7;  // crores → rupees
+  const eq = +document.getElementById('stEqPct').value/100;
+  const gs = +document.getElementById('stGsecPct').value/100;
+  const cp = +document.getElementById('stCorpPct').value/100;
+  const gd = +document.getElementById('stGoldPct').value/100;
+  const ch = +document.getElementById('stCashPct').value/100;
+
+  const tbody = document.getElementById('stressBody');
+  let html = '';
+  const losses = [];
+  scenarios.forEach(s=>{
+    const pl = aum * (eq*s.shocks.eq + gs*s.shocks.gsec + cp*s.shocks.corp + gd*s.shocks.gold + ch*s.shocks.cash);
+    const pct = pl/aum*100;
+    losses.push({name:s.name, pl, pct, tag:s.tag});
+    const cls = pl>=0 ? 'up' : 'down';
+    html += `
+      <tr>
+        <td>
+          ${s.tag ? `<span class="scenario-tag ${s.tag}">${s.tag==='severe'?'severe':'moderate'}</span>` : ''}
+          <span class="scenario-name">${s.name}</span>
+        </td>
+        <td class="num ${cls}">${pl>=0?'+':''}₹${(Math.abs(pl)/1e5).toFixed(2)} L</td>
+        <td class="num ${cls}">${pct>=0?'+':''}${pct.toFixed(2)}%</td>
+        <td>${s.worst}</td>
+      </tr>
+    `;
+  });
+  tbody.innerHTML = html;
+  drawStressBar(losses);
+}
+
+function drawStressBar(losses){
+  const svg = document.getElementById('stressChart');
+  svg.innerHTML='';
+  const W=800, H=280, pad={t:18, r:18, b:80, l:60};
+  const vals = losses.map(l => l.pl/1e5);
+  const yMin = Math.min(...vals, 0), yMax = Math.max(...vals, 0);
+  const N = vals.length;
+  const bw = (W-pad.l-pad.r)/N;
+  const ys2 = v => pad.t + (yMax-v)/(yMax-yMin)*(H-pad.t-pad.b);
+
+  // grid
+  for(let i=0;i<=4;i++){
+    const yy = pad.t + i*(H-pad.t-pad.b)/4;
+    svg.appendChild(svgEl('line',{x1:pad.l,x2:W-pad.r,y1:yy,y2:yy,stroke:'#e3dac4','stroke-dasharray':'2,4'}));
+    const v = yMax - i*(yMax-yMin)/4;
+    const t = svgEl('text',{x:pad.l-6,y:yy+3,'text-anchor':'end','font-family':'IBM Plex Mono','font-size':10,fill:'#6b665d'});
+    t.textContent = v.toFixed(0);
+    svg.appendChild(t);
+  }
+  // zero line
+  svg.appendChild(svgEl('line',{x1:pad.l,x2:W-pad.r,y1:ys2(0),y2:ys2(0),stroke:'#1a1a1a','stroke-width':1}));
+
+  losses.forEach((l,i)=>{
+    const v = l.pl/1e5;
+    const x = pad.l + i*bw + 12;
+    const w = bw - 24;
+    const y = v>=0 ? ys2(v) : ys2(0);
+    const h = Math.abs(ys2(v)-ys2(0));
+    const fill = l.tag==='severe' ? '#9b2226' : l.tag==='mod' ? '#a67c2a' : '#3d5a3a';
+    svg.appendChild(svgEl('rect',{x,y,width:w,height:h,fill,opacity:0.85}));
+    // label
+    const lbl = svgEl('text',{x:x+w/2,y:H-pad.b+18,'text-anchor':'middle','font-family':'IBM Plex Mono','font-size':9,fill:'#1a1a1a'});
+    const words = l.name.split(' ');
+    let line1 = '', line2 = '';
+    for(const w of words){
+      if((line1+' '+w).length < 18) line1 = (line1?line1+' ':'')+w;
+      else line2 = (line2?line2+' ':'')+w;
+    }
+    lbl.textContent = line1;
+    svg.appendChild(lbl);
+    if(line2){
+      const lbl2 = svgEl('text',{x:x+w/2,y:H-pad.b+30,'text-anchor':'middle','font-family':'IBM Plex Mono','font-size':9,fill:'#1a1a1a'});
+      lbl2.textContent = line2;
+      svg.appendChild(lbl2);
+    }
+    // value on bar
+    const vlbl = svgEl('text',{x:x+w/2,y:y-6,'text-anchor':'middle','font-family':'IBM Plex Mono','font-size':10,'font-weight':600,fill:'#1a1a1a'});
+    vlbl.textContent = (v>=0?'+':'')+v.toFixed(1)+'L';
+    svg.appendChild(vlbl);
+  });
+}
+runStress();
+
+/* =============================================================
+   X. EXOTIC OPTIONS (Monte Carlo)
+============================================================= */
+function runExotic(){
+  const type = document.getElementById('exoType').value;
+  const S0 = +document.getElementById('exoSpot').value;
+  const K = +document.getElementById('exoStrike').value;
+  const sigma = +document.getElementById('exoVol').value/100;
+  const T = +document.getElementById('exoT').value;
+  const r = +document.getElementById('exoRate').value/100;
+  const B = +document.getElementById('exoBarrier').value;
+  const M = Math.min(20000, +document.getElementById('exoPaths').value);
+  const N = +document.getElementById('exoSteps').value;
+
+  const dt = T/N;
+  const drift = (r - 0.5*sigma*sigma)*dt;
+  const diff = sigma*Math.sqrt(dt);
+
+  const payoffs = [];
+  const samplePaths = [];
+  let knocked = 0;
+
+  // antithetic variates: use ±z pair
+  const paired = Math.floor(M/2);
+  for(let p=0;p<paired;p++){
+    for(const sign of [1,-1]){
+      const path = new Float64Array(N+1);
+      path[0] = S0;
+      let maxS = S0, minS = S0;
+      let avgS = 0;
+      let touched = false;
+      for(let t=1;t<=N;t++){
+        const z = sign * randn();
+        path[t] = path[t-1] * Math.exp(drift + diff*z);
+        if(path[t] > maxS) maxS = path[t];
+        if(path[t] < minS) minS = path[t];
+        avgS += path[t];
+        if(B && (type==='barrier-uo' && path[t] >= B)) touched = true;
+        if(B && (type==='barrier-di' && path[t] <= B)) touched = true;
+      }
+      avgS /= N;
+      const ST = path[N];
+
+      let payoff = 0;
+      if(type==='asian')           payoff = Math.max(avgS - K, 0);
+      else if(type==='barrier-uo') payoff = touched ? 0 : Math.max(ST - K, 0);
+      else if(type==='barrier-di') { if(touched) knocked++; payoff = touched ? Math.max(K - ST, 0) : 0; }
+      else if(type==='lookback')   payoff = ST - minS;  // floating-strike call: ST - min
+      else if(type==='digital')    payoff = ST > K ? 100 : 0;
+      payoffs.push(payoff);
+      if(samplePaths.length < 60) samplePaths.push({path, payoff});
+      if(type==='barrier-uo' && touched) knocked++;
+    }
+  }
+
+  const discountedPayoffs = payoffs.map(p => p * Math.exp(-r*T));
+  const price = mean(discountedPayoffs);
+  const se = stdev(discountedPayoffs)/Math.sqrt(payoffs.length);
+
+  // vanilla equivalent for comparison
+  let vanilla;
+  if(type==='digital'){
+    // BS digital call: e^-rT * N(d2) * payout
+    const d2 = (Math.log(S0/K) + (r-0.5*sigma*sigma)*T)/(sigma*Math.sqrt(T));
+    vanilla = Math.exp(-r*T)*normCDF(d2)*100;
+  } else {
+    // BS vanilla call as benchmark
+    const d1 = (Math.log(S0/K) + (r+0.5*sigma*sigma)*T)/(sigma*Math.sqrt(T));
+    const d2 = d1 - sigma*Math.sqrt(T);
+    vanilla = S0*normCDF(d1) - K*Math.exp(-r*T)*normCDF(d2);
+  }
+
+  document.getElementById('exoPrice').textContent = price.toFixed(2);
+  document.getElementById('exoSE').textContent = se.toFixed(3);
+  document.getElementById('exoVanilla').textContent = '₹' + vanilla.toFixed(2);
+  document.getElementById('exoDiff').textContent = (price>=vanilla?'+':'') + '₹' + (price-vanilla).toFixed(2);
+  document.getElementById('exoKnock').textContent = type.startsWith('barrier') ? (knocked/payoffs.length*100).toFixed(1)+'%' : '—';
+
+  drawExoticPaths(samplePaths, K, B, type);
+}
+
+function drawExoticPaths(paths, K, B, type){
+  const svg = document.getElementById('exoChart');
+  svg.innerHTML='';
+  const W=700, H=280, pad={t:14, r:14, b:24, l:54};
+  let yMin=Infinity, yMax=-Infinity;
+  paths.forEach(p=>{
+    for(let i=0;i<p.path.length;i++){
+      if(p.path[i]<yMin) yMin=p.path[i];
+      if(p.path[i]>yMax) yMax=p.path[i];
+    }
+  });
+  if(B && (type==='barrier-uo'||type==='barrier-di')){
+    yMin = Math.min(yMin, B); yMax = Math.max(yMax, B);
+  }
+  const N = paths[0].path.length-1;
+  const xs2 = i => pad.l + i*(W-pad.l-pad.r)/N;
+  const ys2 = v => H-pad.b - (v-yMin)/(yMax-yMin)*(H-pad.t-pad.b);
+
+  // grid
+  for(let i=0;i<=4;i++){
+    const yy = pad.t + i*(H-pad.t-pad.b)/4;
+    svg.appendChild(svgEl('line',{x1:pad.l,x2:W-pad.r,y1:yy,y2:yy,stroke:'#e3dac4','stroke-dasharray':'2,4'}));
+    const v = yMax - i*(yMax-yMin)/4;
+    const t = svgEl('text',{x:pad.l-6,y:yy+3,'text-anchor':'end','font-family':'IBM Plex Mono','font-size':10,fill:'#6b665d'});
+    t.textContent = v.toFixed(0);
+    svg.appendChild(t);
+  }
+  // strike line
+  svg.appendChild(svgEl('line',{x1:pad.l,x2:W-pad.r,y1:ys2(K),y2:ys2(K),stroke:'#1a1a1a','stroke-dasharray':'4,3'}));
+  const skLbl = svgEl('text',{x:W-pad.r-4,y:ys2(K)-4,'text-anchor':'end','font-family':'IBM Plex Mono','font-size':10,fill:'#1a1a1a'});
+  skLbl.textContent = 'K=' + K;
+  svg.appendChild(skLbl);
+
+  // barrier line
+  if(B && (type==='barrier-uo'||type==='barrier-di')){
+    svg.appendChild(svgEl('line',{x1:pad.l,x2:W-pad.r,y1:ys2(B),y2:ys2(B),stroke:'#9b2226','stroke-dasharray':'2,2','stroke-width':1.5}));
+    const bLbl = svgEl('text',{x:W-pad.r-4,y:ys2(B)-4,'text-anchor':'end','font-family':'IBM Plex Mono','font-size':10,fill:'#9b2226'});
+    bLbl.textContent = 'B=' + B;
+    svg.appendChild(bLbl);
+  }
+
+  // paths
+  paths.forEach(p=>{
+    let d = 'M ' + xs2(0) + ' ' + ys2(p.path[0]);
+    for(let i=1;i<p.path.length;i++) d += ' L ' + xs2(i) + ' ' + ys2(p.path[i]);
+    const stroke = p.payoff > 0 ? '#9b2226' : '#6b665d';
+    const opacity = p.payoff > 0 ? 0.55 : 0.25;
+    svg.appendChild(svgEl('path',{d,fill:'none',stroke,'stroke-width':0.8,opacity}));
+  });
+}
+runExotic();
+
+/* =============================================================
+   XI. PCA / EIGEN-RISK
+============================================================= */
+// Use the corrUniverse (8 assets) and a covariance matrix derived from corrMatrix + sigmas
+const pcaSigmas = [0.24, 0.18, 0.21, 0.19, 0.32, 0.22, 0.25, 0.16];
+function buildCov(){
+  const N = corrUniverse.length;
+  const cov = [];
+  for(let i=0;i<N;i++){
+    const row = [];
+    for(let j=0;j<N;j++){
+      row.push(corrMatrix[i][j] * pcaSigmas[i] * pcaSigmas[j]);
+    }
+    cov.push(row);
+  }
+  return cov;
+}
+
+// Jacobi eigendecomposition for symmetric matrices
+function jacobi(matrix, maxIter=200, tol=1e-10){
+  const N = matrix.length;
+  const A = matrix.map(r => [...r]);
+  const V = [];
+  for(let i=0;i<N;i++){
+    const row = new Array(N).fill(0); row[i]=1;
+    V.push(row);
+  }
+  for(let iter=0; iter<maxIter; iter++){
+    // find largest off-diagonal
+    let p=0, q=1, max=0;
+    for(let i=0;i<N;i++) for(let j=i+1;j<N;j++){
+      if(Math.abs(A[i][j])>max){ max=Math.abs(A[i][j]); p=i; q=j; }
+    }
+    if(max<tol) break;
+    const theta = (A[q][q]-A[p][p])/(2*A[p][q]);
+    const t = theta>=0 ? 1/(theta+Math.sqrt(1+theta*theta)) : 1/(theta-Math.sqrt(1+theta*theta));
+    const c = 1/Math.sqrt(1+t*t);
+    const s = t*c;
+    // rotate
+    const App = A[p][p], Aqq = A[q][q], Apq = A[p][q];
+    A[p][p] = App - t*Apq;
+    A[q][q] = Aqq + t*Apq;
+    A[p][q] = 0; A[q][p] = 0;
+    for(let i=0;i<N;i++) if(i!==p && i!==q){
+      const Aip = A[i][p], Aiq = A[i][q];
+      A[i][p] = c*Aip - s*Aiq; A[p][i] = A[i][p];
+      A[i][q] = s*Aip + c*Aiq; A[q][i] = A[i][q];
+    }
+    for(let i=0;i<N;i++){
+      const Vip = V[i][p], Viq = V[i][q];
+      V[i][p] = c*Vip - s*Viq;
+      V[i][q] = s*Vip + c*Viq;
+    }
+  }
+  const eigvals = A.map((row,i)=>row[i]);
+  // sort descending
+  const idx = eigvals.map((v,i)=>i).sort((a,b)=>eigvals[b]-eigvals[a]);
+  const sortedVals = idx.map(i=>eigvals[i]);
+  const sortedVecs = idx.map(i => V.map(row => row[i]));
+  return {values:sortedVals, vectors:sortedVecs};
+}
+
+function runPCA(){
+  const cov = buildCov();
+  const {values, vectors} = jacobi(cov);
+  const total = values.reduce((s,v)=>s+v,0);
+
+  // table
+  const tbody = document.querySelector('#eigenTable tbody');
+  let cum = 0;
+  tbody.innerHTML = values.map((v,i)=>{
+    cum += v/total*100;
+    return `
+      <tr>
+        <td><strong>PC${i+1}</strong></td>
+        <td>${v.toFixed(5)}</td>
+        <td>${(v/total*100).toFixed(1)}%</td>
+        <td>${cum.toFixed(1)}%</td>
+      </tr>
+    `;
+  }).join('');
+
+  const pc1Pct = values[0]/total*100;
+  const pc12 = (values[0]+values[1])/total*100;
+  document.getElementById('pcaInterp').textContent =
+    `PC1 captures ${pc1Pct.toFixed(1)}% of total portfolio variance, indicating a ${pc1Pct>50?'dominant':'meaningful'} systematic risk factor — likely the broad market. ` +
+    `The first two components together explain ${pc12.toFixed(1)}% of variance, suggesting ${pc12>70?'high':'moderate'} dimensionality reduction is feasible.`;
+
+  drawScree(values, total);
+  drawLoadings(vectors[0], vectors[1]);
+}
+
+function drawScree(values, total){
+  const svg = document.getElementById('screePlot');
+  svg.innerHTML='';
+  const W=700, H=280, pad={t:18, r:40, b:40, l:54};
+  const N = values.length;
+  const pcts = values.map(v => v/total*100);
+  let cum=0;
+  const cums = pcts.map(p => (cum+=p));
+  const yMax = 100;
+  const bw = (W-pad.l-pad.r)/N;
+
+  // grid
+  for(let i=0;i<=5;i++){
+    const yy = pad.t + i*(H-pad.t-pad.b)/5;
+    svg.appendChild(svgEl('line',{x1:pad.l,x2:W-pad.r,y1:yy,y2:yy,stroke:'#e3dac4','stroke-dasharray':'2,4'}));
+    const v = yMax - i*yMax/5;
+    const t = svgEl('text',{x:pad.l-6,y:yy+3,'text-anchor':'end','font-family':'IBM Plex Mono','font-size':10,fill:'#6b665d'});
+    t.textContent = v.toFixed(0)+'%';
+    svg.appendChild(t);
+  }
+
+  // bars
+  pcts.forEach((p,i)=>{
+    const h = (p/yMax)*(H-pad.t-pad.b);
+    const x = pad.l + i*bw + 8;
+    svg.appendChild(svgEl('rect',{x,y:H-pad.b-h,width:bw-16,height:h,fill:'#9b2226',opacity:0.85}));
+    const lbl = svgEl('text',{x:x+(bw-16)/2,y:H-pad.b+14,'text-anchor':'middle','font-family':'IBM Plex Mono','font-size':10,fill:'#6b665d'});
+    lbl.textContent = 'PC'+(i+1);
+    svg.appendChild(lbl);
+  });
+
+  // cumulative line
+  let d = '';
+  cums.forEach((v,i)=>{
+    const x = pad.l + i*bw + bw/2;
+    const y = H-pad.b - (v/yMax)*(H-pad.t-pad.b);
+    d += (i===0 ? 'M ':' L ') + x + ' ' + y;
+  });
+  svg.appendChild(svgEl('path',{d,fill:'none',stroke:'#3d5a3a','stroke-width':2.4}));
+  cums.forEach((v,i)=>{
+    const x = pad.l + i*bw + bw/2;
+    const y = H-pad.b - (v/yMax)*(H-pad.t-pad.b);
+    svg.appendChild(svgEl('circle',{cx:x,cy:y,r:3.5,fill:'#3d5a3a'}));
+  });
+
+  // axis label
+  const xa = svgEl('text',{x:W/2,y:H-4,'text-anchor':'middle','font-family':'Cormorant Garamond','font-style':'italic','font-size':12,fill:'#6b665d'});
+  xa.textContent = 'principal components (sorted by variance)';
+  svg.appendChild(xa);
+}
+
+function drawLoadings(pc1, pc2){
+  const svg = document.getElementById('loadingsChart');
+  svg.innerHTML='';
+  const W=700, H=240, pad={t:16, r:14, b:36, l:54};
+  const N = pc1.length;
+  const allV = [...pc1, ...pc2];
+  const yMin = Math.min(...allV), yMax = Math.max(...allV);
+  const bw = (W-pad.l-pad.r)/N;
+  const ys2 = v => pad.t + (yMax-v)/(yMax-yMin)*(H-pad.t-pad.b);
+
+  // zero line
+  svg.appendChild(svgEl('line',{x1:pad.l,x2:W-pad.r,y1:ys2(0),y2:ys2(0),stroke:'#1a1a1a','stroke-width':1}));
+
+  // grid
+  for(let i=0;i<=4;i++){
+    const yy = pad.t + i*(H-pad.t-pad.b)/4;
+    svg.appendChild(svgEl('line',{x1:pad.l,x2:W-pad.r,y1:yy,y2:yy,stroke:'#e3dac4','stroke-dasharray':'2,4'}));
+    const v = yMax - i*(yMax-yMin)/4;
+    const t = svgEl('text',{x:pad.l-6,y:yy+3,'text-anchor':'end','font-family':'IBM Plex Mono','font-size':10,fill:'#6b665d'});
+    t.textContent = v.toFixed(2);
+    svg.appendChild(t);
+  }
+
+  pc1.forEach((v,i)=>{
+    const x = pad.l + i*bw + 6;
+    const w = (bw-12)/2 - 1;
+    const y = v>=0 ? ys2(v) : ys2(0);
+    const h = Math.abs(ys2(v)-ys2(0));
+    svg.appendChild(svgEl('rect',{x,y,width:w,height:h,fill:'#9b2226'}));
+    const v2 = pc2[i];
+    const x2 = x + w + 2;
+    const y2 = v2>=0 ? ys2(v2) : ys2(0);
+    const h2 = Math.abs(ys2(v2)-ys2(0));
+    svg.appendChild(svgEl('rect',{x:x2,y:y2,width:w,height:h2,fill:'#3d5a3a'}));
+
+    const lbl = svgEl('text',{x:pad.l + i*bw + bw/2, y:H-pad.b+16,'text-anchor':'middle','font-family':'IBM Plex Mono','font-size':9,fill:'#6b665d'});
+    lbl.textContent = corrUniverse[i].slice(0,5);
+    svg.appendChild(lbl);
+  });
+
+  // legend
+  svg.appendChild(svgEl('rect',{x:pad.l, y:H-16, width:10, height:8, fill:'#9b2226'}));
+  const l1 = svgEl('text',{x:pad.l+14, y:H-9,'font-family':'IBM Plex Mono','font-size':10,fill:'#1a1a1a'});
+  l1.textContent='PC1';
+  svg.appendChild(l1);
+  svg.appendChild(svgEl('rect',{x:pad.l+50, y:H-16, width:10, height:8, fill:'#3d5a3a'}));
+  const l2 = svgEl('text',{x:pad.l+64, y:H-9,'font-family':'IBM Plex Mono','font-size':10,fill:'#1a1a1a'});
+  l2.textContent='PC2';
+  svg.appendChild(l2);
+}
+runPCA();
+</script>
+</body>
+</html>

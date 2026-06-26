@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ABC Inc. — Online Marketplace DCF Valuation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0e14;
+  --bg-soft:#0f141c;
+  --panel:#121823;
+  --panel-2:#161d2a;
+  --line:#1f2937;
+  --line-2:#2a3548;
+  --ink:#e6edf6;
+  --ink-soft:#a6b3c4;
+  --ink-mute:#6b7891;
+  --accent:#d4af37;     /* refined gold */
+  --accent-2:#f4d57a;
+  --teal:#48c4b3;
+  --rose:#e07a5f;
+  --hist:#3a4a66;       /* historical column tint */
+  --fcst:#1a2335;       /* forecast column tint */
+  --hist-text:#9bb0d1;
+  --fcst-text:#cfe1ff;
+  --good:#5cd4a8;
+  --bad:#ff7a8a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
+body{
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(212,175,55,0.08), transparent 60%),
+    radial-gradient(900px 500px at -10% 30%, rgba(72,196,179,0.06), transparent 60%),
+    var(--bg);
+  min-height:100vh;
+}
+
+/* ---------- HEADER ---------- */
+.hdr{
+  border-bottom:1px solid var(--line);
+  padding:36px 48px 28px;
+  display:flex;align-items:flex-end;justify-content:space-between;gap:32px;
+  position:relative;
+}
+.hdr::before{
+  content:"";position:absolute;left:48px;right:48px;bottom:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  opacity:.4;
+}
+.hdr h1{
+  font-family:'Fraunces',serif;font-weight:400;font-size:46px;letter-spacing:-0.02em;line-height:1;margin:0;
+}
+.hdr h1 .em{font-style:italic;color:var(--accent);font-weight:500}
+.hdr .sub{color:var(--ink-soft);margin-top:10px;font-size:13px;letter-spacing:0.04em;text-transform:uppercase}
+.tag{
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent-2);
+  border:1px solid var(--accent);padding:8px 14px;border-radius:2px;
+  letter-spacing:0.18em;text-transform:uppercase;
+}
+
+/* ---------- TABS ---------- */
+.tabs{
+  display:flex;gap:0;padding:0 48px;border-bottom:1px solid var(--line);
+  background:var(--bg-soft);position:sticky;top:0;z-index:50;
+}
+.tab{
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;
+  color:var(--ink-mute);background:transparent;border:0;padding:18px 22px;cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .2s ease;
+}
+.tab:hover{color:var(--ink-soft)}
+.tab.active{color:var(--accent-2);border-bottom-color:var(--accent)}
+.tab .num{color:var(--ink-mute);margin-right:8px;font-weight:500}
+.tab.active .num{color:var(--accent)}
+
+/* ---------- PANEL ---------- */
+.panel{display:none;padding:32px 48px 80px}
+.panel.active{display:block}
+.section-title{
+  font-family:'Fraunces',serif;font-size:22px;font-weight:500;letter-spacing:-0.01em;
+  margin:28px 0 14px;color:var(--ink);
+  display:flex;align-items:center;gap:14px;
+}
+.section-title::before{
+  content:"";display:inline-block;width:6px;height:6px;background:var(--accent);transform:rotate(45deg);
+}
+.subtitle{color:var(--ink-soft);font-size:13px;margin:0 0 20px;max-width:880px;line-height:1.6}
+
+/* ---------- TABLE ---------- */
+.table-wrap{
+  overflow-x:auto;border:1px solid var(--line);border-radius:6px;
+  background:var(--panel);
+  box-shadow:0 1px 0 rgba(255,255,255,0.02) inset, 0 30px 60px -30px rgba(0,0,0,.6);
+}
+table.fin{
+  width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12px;
+  min-width:1400px;
+}
+table.fin th, table.fin td{padding:9px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+table.fin th:first-child, table.fin td:first-child{
+  text-align:left;position:sticky;left:0;background:var(--panel);z-index:2;
+  font-family:'Inter',sans-serif;font-weight:500;color:var(--ink);
+  min-width:340px;border-right:1px solid var(--line);
+}
+table.fin thead th{
+  background:var(--panel-2);color:var(--ink-soft);
+  font-weight:500;letter-spacing:0.06em;text-transform:uppercase;font-size:10.5px;
+  border-bottom:1px solid var(--line-2);
+  padding-top:12px;padding-bottom:12px;
+}
+table.fin thead th.unit-col{color:var(--ink-mute);font-style:normal}
+table.fin thead th.hist{color:var(--hist-text)}
+table.fin thead th.fcst{color:var(--fcst-text)}
+table.fin tbody td.hist{background:rgba(58,74,102,0.08)}
+table.fin tbody td.fcst{background:rgba(212,175,55,0.03)}
+table.fin tbody tr:hover td{background:rgba(212,175,55,0.04)}
+table.fin tbody tr:hover td:first-child{background:var(--panel-2)}
+
+table.fin tr.section-row td{
+  background:var(--panel-2)!important;color:var(--accent-2);
+  font-family:'Fraunces',serif;font-weight:500;font-size:13px;letter-spacing:0.02em;
+  text-transform:uppercase;padding:14px 12px 10px;
+  border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);
+}
+table.fin tr.subtotal td{
+  border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);
+  background:rgba(212,175,55,0.04);font-weight:600;color:var(--ink);
+}
+table.fin tr.total td{
+  border-top:2px double var(--accent);border-bottom:2px double var(--accent);
+  background:rgba(212,175,55,0.07);font-weight:700;color:var(--accent-2);
+}
+table.fin td.indent-1{padding-left:24px}
+table.fin td.indent-2{padding-left:42px}
+table.fin td.unit{color:var(--ink-mute);font-size:11px;text-align:left}
+table.fin tr.check td{font-weight:600;color:var(--good)}
+table.fin tr.check.fail td{color:var(--bad)}
+
+/* Inputs */
+.input{
+  background:transparent;border:1px solid var(--line-2);color:var(--ink);
+  padding:5px 8px;width:90px;text-align:right;border-radius:3px;
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+}
+.input:focus{outline:none;border-color:var(--accent);background:rgba(212,175,55,0.05)}
+
+/* ---------- KPI CARDS ---------- */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0 0 22px}
+.kpi{
+  border:1px solid var(--line);border-radius:6px;padding:18px 20px;
+  background:linear-gradient(180deg,var(--panel) 0%,var(--bg-soft) 100%);
+  position:relative;overflow:hidden;
+}
+.kpi::after{
+  content:"";position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  opacity:.5;
+}
+.kpi .lbl{
+  font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;
+  color:var(--ink-mute);font-family:'JetBrains Mono',monospace;margin-bottom:8px;
+}
+.kpi .val{font-family:'Fraunces',serif;font-size:28px;font-weight:500;color:var(--ink);letter-spacing:-0.01em}
+.kpi .val.gold{color:var(--accent-2)}
+.kpi .val.green{color:var(--good)}
+.kpi .val.red{color:var(--bad)}
+.kpi .meta{font-size:11px;color:var(--ink-soft);margin-top:4px;font-family:'JetBrains Mono',monospace}
+
+/* ---------- DECISION ---------- */
+.decision-box{
+  margin:24px 0 8px;border:1px solid var(--accent);border-radius:6px;
+  padding:24px 28px;background:linear-gradient(135deg,rgba(212,175,55,0.08),rgba(72,196,179,0.04));
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px;
+}
+.decision-box .title{
+  font-family:'Fraunces',serif;font-size:14px;letter-spacing:0.18em;
+  text-transform:uppercase;color:var(--accent-2);margin-bottom:6px;
+}
+.decision-box .verdict{font-family:'Fraunces',serif;font-size:42px;font-weight:500;letter-spacing:-0.01em}
+.verdict.buy{color:var(--good)}
+.verdict.sell{color:var(--bad)}
+.verdict.hold{color:var(--accent-2)}
+
+/* ---------- LEGEND / CHIPS ---------- */
+.legend{display:flex;gap:14px;align-items:center;font-size:11px;color:var(--ink-mute);font-family:'JetBrains Mono',monospace;margin:8px 0 18px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;border:1px solid var(--line-2)}
+.chip .dot{width:7px;height:7px;border-radius:50%}
+.chip .dot.h{background:var(--hist-text)}
+.chip .dot.f{background:var(--accent)}
+
+/* ---------- TWO COL ---------- */
+.two-col{display:grid;grid-template-columns:1.4fr 1fr;gap:20px}
+@media (max-width:1100px){.two-col{grid-template-columns:1fr}.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+
+.note{
+  font-size:11.5px;color:var(--ink-soft);line-height:1.7;margin-top:14px;
+  border-left:2px solid var(--accent);padding:6px 0 6px 14px;
+  font-family:'Inter',sans-serif;
+}
+.note b{color:var(--accent-2);font-weight:600}
+
+/* footer */
+.foot{padding:28px 48px;color:var(--ink-mute);font-size:11px;border-top:1px solid var(--line);font-family:'JetBrains Mono',monospace;text-align:center;letter-spacing:0.1em}
+
+/* scrollbar */
+.table-wrap::-webkit-scrollbar{height:10px}
+.table-wrap::-webkit-scrollbar-track{background:var(--bg-soft)}
+.table-wrap::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:10px}
+.table-wrap::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div>
+    <h1>ABC Inc. <span class="em">— online marketplace</span></h1>
+    <div class="sub">DCF Valuation Model · FY22–FY34 · As of 31 Mar 2024</div>
+  </div>
+  <div class="tag">Exam Solution</div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="assumptions"><span class="num">01</span>Assumptions</button>
+  <button class="tab" data-tab="working"><span class="num">02</span>Working</button>
+  <button class="tab" data-tab="fs"><span class="num">03</span>Financial Statements</button>
+  <button class="tab" data-tab="valuation"><span class="num">04</span>Valuation</button>
+  <button class="tab" data-tab="summary"><span class="num">05</span>Summary</button>
+</nav>
+
+<!-- ============ PANEL: ASSUMPTIONS ============ -->
+<section class="panel active" id="panel-assumptions">
+  <div class="section-title">Model Assumptions</div>
+  <p class="subtitle">All input drivers used in the model. FY22–FY24 are historical (sourced from given data); FY25–FY34 are forecast period assumptions. Adjust forecast cells to flex the model — every downstream sheet recalculates instantly.</p>
+  <div class="legend">
+    <span class="chip"><span class="dot h"></span>Historical</span>
+    <span class="chip"><span class="dot f"></span>Forecast (editable)</span>
+  </div>
+  <div class="table-wrap">
+    <table class="fin" id="tbl-assumptions"></table>
+  </div>
+  <div class="note">
+    <b>Period convention:</b> Fiscal year ends 31-Mar (Indian convention). Period counter 1–13 corresponds to FY22 through FY34.
+    <b>WACC inputs:</b> Risk-free rate 3.0% · Beta 1.10 · Equity risk premium 5.0% · Cost of debt (pre-tax) 7.0% · Tax rate 30% · Terminal growth 2.0%.
+  </div>
+</section>
+
+<!-- ============ PANEL: WORKING ============ -->
+<section class="panel" id="panel-working">
+  <div class="section-title">Working — Schedules & Calculations</div>
+  <p class="subtitle">Revenue build, cost build, working capital, capex/depreciation (WDV method), debt schedule and equity reserves. All values flow into the financial statements and valuation.</p>
+  <div class="table-wrap">
+    <table class="fin" id="tbl-working"></table>
+  </div>
+</section>
+
+<!-- ============ PANEL: FS ============ -->
+<section class="panel" id="panel-fs">
+  <div class="section-title">Profit &amp; Loss · Balance Sheet · Cash Flow</div>
+  <p class="subtitle">Three-statement output. The Balance Sheet Check row should read zero across every period, confirming the model articulates correctly.</p>
+  <div class="table-wrap">
+    <table class="fin" id="tbl-fs"></table>
+  </div>
+  <div id="bs-check-status" class="note"></div>
+</section>
+
+<!-- ============ PANEL: VALUATION ============ -->
+<section class="panel" id="panel-valuation">
+  <div class="section-title">DCF Valuation — Free Cash Flow to Firm (FCFF)</div>
+  <p class="subtitle">Enterprise value derived from discounting forecast-period FCFF and a Gordon-growth terminal value at WACC. Equity value reconciled by netting debt and adding cash, then divided by outstanding shares for intrinsic value per share.</p>
+
+  <div class="kpi-grid" id="kpi-valuation"></div>
+
+  <div class="two-col">
+    <div class="table-wrap">
+      <table class="fin" id="tbl-valuation"></table>
+    </div>
+    <div class="table-wrap">
+      <table class="fin" id="tbl-wacc"></table>
+    </div>
+  </div>
+
+  <div class="decision-box" id="decision-box">
+    <div>
+      <div class="title">Investment Recommendation</div>
+      <div class="verdict" id="verdict-text">—</div>
+    </div>
+    <div style="text-align:right">
+      <div class="title">Upside / Downside</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600" id="upside-text">—</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Method:</b> FCFF = EBIT × (1 − T) + D&amp;A − ΔWC − Capex. Terminal Value = FCFF<sub>terminal</sub> × (1 + g) ÷ (WACC − g).
+    Discount factor uses mid-year convention disabled (year-end discounting), with t measured from valuation date 31-Mar-2024.
+  </div>
+</section>
+
+<!-- ============ PANEL: SUMMARY ============ -->
+<section class="panel" id="panel-summary">
+  <div class="section-title">Executive Summary</div>
+  <p class="subtitle">One-page snapshot of revenue trajectory, profitability, and the valuation conclusion.</p>
+  <div class="kpi-grid" id="kpi-summary"></div>
+  <div class="two-col">
+    <div class="table-wrap">
+      <table class="fin" id="tbl-summary-rev"></table>
+    </div>
+    <div class="table-wrap">
+      <table class="fin" id="tbl-summary-val"></table>
+    </div>
+  </div>
+  <div class="note" style="margin-top:22px">
+    <b>Model integrity:</b> Balance Sheet checks zero across all 13 periods · CFO + CFI + CFF reconciles to change in cash · Debt schedule fully amortizes to zero by FY30.
+    <b>Sensitivities to flex:</b> Terminal growth, WACC components, Take Rate, GMV Growth, COGS %.
+  </div>
+</section>
+
+<div class="foot">ABC Inc. · Online Marketplace Valuation · Built for the exam · All figures in USD Million unless noted</div>
+
+<script>
+/* =====================================================================
+   ABC Inc. — Online Marketplace DCF Valuation
+   Period Counter: 1=FY22 (Apr21-Mar22) … 13=FY34 (Apr33-Mar34)
+   Historical: FY22, FY23, FY24 (idx 0,1,2)
+   Forecast:   FY25..FY34 (idx 3..12)
+   ===================================================================== */
+
+const N = 13;
+const FCST_START = 3; // FY25
+const periodLabels = [
+  "FY22","FY23","FY24","FY25","FY26","FY27","FY28","FY29","FY30","FY31","FY32","FY33","FY34"
+];
+const periodTypes = ["Historical","Historical","Historical","Forecast","Forecast","Forecast","Forecast","Forecast","Forecast","Forecast","Forecast","Forecast","Forecast"];
+const daysInPeriod = [365,365,366,365,365,365,366,365,365,365,366,365,365];
+
+/* ---------- ASSUMPTIONS (from exam Assumption sheet) ---------- */
+const A = {
+  // Marketplace
+  histGMV: [18000, 22500, 27000, null,null,null,null,null,null,null,null,null,null],
+  gmvGrowth: [null, 0.25, 0.20, 0.20, 0.20, 0.20, 0.20, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10],
+  takeRate:  [0.060, 0.065, 0.070, 0.075, 0.080, 0.080, 0.080, 0.080, 0.080, 0.080, 0.080, 0.080, 0.080],
+
+  // Retail
+  histTxnVol: [2000000, 2300000, 2600000, null,null,null,null,null,null,null,null,null,null],
+  txnVolGrowth:[null, 0.15, 0.130435, 0.10, 0.10, 0.10, 0.10, 0.10, 0.05, 0.05, 0.05, 0.05, 0.05],
+  histAvgTxn: [100, 120, 130, null,null,null,null,null,null,null,null,null,null],
+  avgTxnGrowth:[null, 0.20, 0.083333, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
+
+  // COGS as % of Retail Revenue
+  cogsPct: [0.995, 0.976, 0.980, 0.975, 0.970, 0.965, 0.960, 0.960, 0.960, 0.960, 0.960, 0.960, 0.960],
+
+  // Delivery
+  histDeliveryCost:[2.00, 2.11, 2.22, null,null,null,null,null,null,null,null,null,null],
+  deliveryIncrease:[null, 0.055, 0.052133, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
+
+  // Payment fees as % of total GMV
+  paymentPct:[0.0055, 0.0053, 0.0051, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005],
+
+  // Marketing as % of total GMV
+  marketingPct:[0.020, 0.016, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015],
+
+  // Staff
+  histHeadcount:[250, 300, 330, null,null,null,null,null,null,null,null,null,null],
+  hcIncrease:[null, 0.20, 0.10, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08],
+  histAvgSalary:[41000, 43200, 45500, null,null,null,null,null,null,null,null,null,null],
+  salaryIncrease:[null, 0.053659, 0.053241, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
+
+  // IT cost
+  histITCost:[100, 110, 120, null,null,null,null,null,null,null,null,null,null],
+  itIncrease:[null, 0.10, 0.090909, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08],
+
+  // Other costs as % of Revenue
+  otherPct:[0.021, 0.023, 0.020, 0.020, 0.020, 0.020, 0.020, 0.020, 0.020, 0.020, 0.020, 0.020, 0.020],
+
+  // Working capital days
+  dso:[50,50,50,50,50,50,50,50,50,50,50,50,50],
+  dio:[45,45,45,45,45,45,45,45,45,45,45,45,45],
+  dpo:[30,30,30,30,30,30,30,30,30,30,30,30,30],
+
+  // Capex
+  capexPct:[0.10, 0.023, 0.017, 0.020, 0.020, 0.020, 0.020, 0.020, 0.020, 0.020, 0.020, 0.020, 0.020],
+
+  // Depreciation (WDV)
+  usefulLife: 5,
+  salvageValue: 0.10,
+  // Depreciation rate WDV: 1 - (S/C)^(1/n) = 1 - 0.1^(1/5) = 0.36904265...
+  depRateWDV: 1 - Math.pow(0.10, 1/5),
+
+  // Debt
+  debtDrawdown:[75, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  debtRepayment:[0, 10, 10, 15, 10, 10, 10, 5, 5, 0, 0, 0, 0],
+  interestRate: 0.07,
+
+  // Equity
+  equityInfusion:[150, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  dividendPayout: 0.50,
+
+  // Tax
+  taxRate: 0.30,
+
+  // Valuation
+  rf: 0.03,
+  beta: 1.10,
+  erp: 0.05,
+  costDebtPre: 0.07,
+  terminalGrowth: 0.02,
+  currentMarketPrice: 75,
+  outstandingShares: 305  // millions
+};
+
+/* ---------- COMPUTE ---------- */
+function arr(){return new Array(N).fill(0)}
+
+function compute(){
+  // --- Revenue ---
+  const gmv = arr();
+  for(let t=0;t<N;t++){
+    if(A.histGMV[t]!=null){gmv[t]=A.histGMV[t];}
+    else{gmv[t]=gmv[t-1]*(1+A.gmvGrowth[t]);}
+  }
+  const mpRev = gmv.map((g,t)=>g*A.takeRate[t]);
+
+  const txnVol = arr();
+  for(let t=0;t<N;t++){
+    if(A.histTxnVol[t]!=null){txnVol[t]=A.histTxnVol[t];}
+    else{txnVol[t]=txnVol[t-1]*(1+A.txnVolGrowth[t]);}
+  }
+  const avgTxn = arr();
+  for(let t=0;t<N;t++){
+    if(A.histAvgTxn[t]!=null){avgTxn[t]=A.histAvgTxn[t];}
+    else{avgTxn[t]=avgTxn[t-1]*(1+A.avgTxnGrowth[t]);}
+  }
+  // Retail Revenue in USD Million = (txnVol * avgTxn) / 1,000,000
+  const retailRev = txnVol.map((v,t)=>(v*avgTxn[t])/1_000_000);
+  const totalRev = mpRev.map((m,t)=>m+retailRev[t]);
+
+  // --- COGS ---
+  const cogs = retailRev.map((r,t)=>r*A.cogsPct[t]);
+
+  // --- Delivery ---
+  const deliveryCostPerPkg = arr();
+  for(let t=0;t<N;t++){
+    if(A.histDeliveryCost[t]!=null){deliveryCostPerPkg[t]=A.histDeliveryCost[t];}
+    else{deliveryCostPerPkg[t]=deliveryCostPerPkg[t-1]*(1+A.deliveryIncrease[t]);}
+  }
+  // # of packages (M) = total GMV (Marketplace + Retail) / Avg Txn Value, in millions
+  const totalGMV = mpRev.map((m,t)=>{
+    // Total GMV = Marketplace GMV + Retail Revenue
+    return gmv[t] + retailRev[t];
+  });
+  // Packages: Total GMV (USD M) * 1,000,000 / Avg Txn (USD) / 1,000,000 = Total GMV / Avg Txn (in millions)
+  const packages = totalGMV.map((tg,t)=>tg/avgTxn[t]); // result already in millions
+  const deliveryCost = packages.map((p,t)=>(p*deliveryCostPerPkg[t])); // millions
+
+  // --- Payment fees ---
+  const paymentCost = totalGMV.map((tg,t)=>tg*A.paymentPct[t]);
+
+  const totalCOS = cogs.map((c,t)=>c+deliveryCost[t]+paymentCost[t]);
+
+  // --- SG&A ---
+  const marketing = totalGMV.map((tg,t)=>tg*A.marketingPct[t]);
+
+  const headcount = arr();
+  for(let t=0;t<N;t++){
+    if(A.histHeadcount[t]!=null){headcount[t]=A.histHeadcount[t];}
+    else{headcount[t]=headcount[t-1]*(1+A.hcIncrease[t]);}
+  }
+  const avgSalary = arr();
+  for(let t=0;t<N;t++){
+    if(A.histAvgSalary[t]!=null){avgSalary[t]=A.histAvgSalary[t];}
+    else{avgSalary[t]=avgSalary[t-1]*(1+A.salaryIncrease[t]);}
+  }
+  // Staff cost in USD Million = headcount * avgSalary / 1,000,000
+  const staffCost = headcount.map((h,t)=>(h*avgSalary[t])/1_000_000);
+
+  const itCost = arr();
+  for(let t=0;t<N;t++){
+    if(A.histITCost[t]!=null){itCost[t]=A.histITCost[t];}
+    else{itCost[t]=itCost[t-1]*(1+A.itIncrease[t]);}
+  }
+
+  const otherCost = totalRev.map((r,t)=>r*A.otherPct[t]);
+  const totalSGA = marketing.map((m,t)=>m+staffCost[t]+itCost[t]+otherCost[t]);
+
+  const totalCost = totalCOS.map((c,t)=>c+totalSGA[t]);
+
+  // --- Capex & Depreciation (WDV) ---
+  const capex = totalRev.map((r,t)=>r*A.capexPct[t]);
+  const ppeBeg = arr(), depreciation = arr(), ppeEnd = arr();
+  for(let t=0;t<N;t++){
+    ppeBeg[t] = t===0 ? 0 : ppeEnd[t-1];
+    // WDV: depreciate on (opening + addition)
+    depreciation[t] = (ppeBeg[t]+capex[t])*A.depRateWDV;
+    ppeEnd[t] = ppeBeg[t]+capex[t]-depreciation[t];
+  }
+
+  // --- Debt ---
+  const debtBeg=arr(), debtEnd=arr(), interest=arr();
+  for(let t=0;t<N;t++){
+    debtBeg[t] = t===0 ? 0 : debtEnd[t-1];
+    debtEnd[t] = debtBeg[t]+A.debtDrawdown[t]-A.debtRepayment[t];
+    if(debtEnd[t]<0) debtEnd[t]=0;
+    interest[t] = (debtBeg[t]+A.debtDrawdown[t])*A.interestRate;
+  }
+
+  // --- P&L core (need PAT for AR/AP, AR/AP need revenue/cost; both already have) ---
+  const grossProfit = totalRev.map((r,t)=>r-totalCOS[t]);
+  const ebitda = grossProfit.map((gp,t)=>gp-totalSGA[t]);
+  const ebit = ebitda.map((e,t)=>e-depreciation[t]);
+  const pbt  = ebit.map((e,t)=>e-interest[t]);
+  const tax  = pbt.map(p=>Math.max(0,p)*A.taxRate);
+  const pat  = pbt.map((p,t)=>p-tax[t]);
+
+  // --- Working Capital ---
+  const ar = totalRev.map((r,t)=>(r/daysInPeriod[t])*A.dso[t]);
+  const inv= cogs.map((c,t)=>(c/daysInPeriod[t])*A.dio[t]);
+  const ap = totalCost.map((tc,t)=>(tc/daysInPeriod[t])*A.dpo[t]);
+  const wc = ar.map((a,t)=>a+inv[t]-ap[t]);
+  const changeWC = wc.map((w,t)=>t===0 ? w : w-wc[t-1]);
+
+  // --- Equity / Retained earnings ---
+  const dividends = pat.map(p=>Math.max(0,p)*A.dividendPayout);
+  const piBeg=arr(), piEnd=arr(), reBeg=arr(), reEnd=arr();
+  for(let t=0;t<N;t++){
+    piBeg[t]=t===0?0:piEnd[t-1];
+    piEnd[t]=piBeg[t]+A.equityInfusion[t];
+    reBeg[t]=t===0?0:reEnd[t-1];
+    reEnd[t]=reBeg[t]+pat[t]-dividends[t];
+  }
+
+  // --- Cash Flow & Cash Balance ---
+  const cfo = pat.map((p,t)=>p+depreciation[t]-changeWC[t]);
+  const cfi = capex.map(c=>-c);
+  const cff = arr();
+  for(let t=0;t<N;t++){
+    cff[t]=A.debtDrawdown[t]-A.debtRepayment[t]+A.equityInfusion[t]-dividends[t];
+  }
+  const netCash = cfo.map((c,t)=>c+cfi[t]+cff[t]);
+  const cashBeg=arr(), cashEnd=arr();
+  for(let t=0;t<N;t++){
+    cashBeg[t]=t===0?0:cashEnd[t-1];
+    cashEnd[t]=cashBeg[t]+netCash[t];
+  }
+
+  // --- Balance Sheet ---
+  const totalCA = cashEnd.map((c,t)=>c+ar[t]+inv[t]);
+  const totalNCA= ppeEnd.slice();
+  const totalAssets = totalCA.map((c,t)=>c+totalNCA[t]);
+  const totalCL = ap.slice();
+  const totalNCL= debtEnd.slice();
+  const totalLiab = totalCL.map((c,t)=>c+totalNCL[t]);
+  const totalEquity = piEnd.map((p,t)=>p+reEnd[t]);
+  const totalLE = totalLiab.map((l,t)=>l+totalEquity[t]);
+  const bsCheck = totalAssets.map((a,t)=>Math.round((a-totalLE[t])*100)/100);
+
+  // --- Valuation: FCFF ---
+  const ebitAfterTax = ebit.map(e=>e*(1-A.taxRate));
+  const fcff = ebitAfterTax.map((e,t)=>e+depreciation[t]-changeWC[t]-capex[t]);
+
+  // WACC
+  const ce = A.rf + A.beta*A.erp;
+  const cdAfterTax = A.costDebtPre*(1-A.taxRate);
+  // Use FY24 (t=2) closing capital structure for static WACC (valuation date = 31-Mar-2024)
+  const D = debtEnd[2];
+  const E = totalEquity[2];
+  const totCap = D+E;
+  const wD = D/totCap;
+  const wE = E/totCap;
+  const wacc = wE*ce + wD*cdAfterTax;
+
+  // Terminal value (at end of FY34, t=12), discount back to valuation date (end of FY24, t=2)
+  const tvFCFF = fcff[12]*(1+A.terminalGrowth)/(wacc - A.terminalGrowth);
+
+  // Discount each forecast period (t=3..12), years from valuation date = (t-2)
+  const yearsFromVal = arr();
+  const discountFactor = arr();
+  const discountedCF = arr();
+  for(let t=0;t<N;t++){
+    yearsFromVal[t] = t<=2 ? 0 : (t-2);
+    if(t>=FCST_START){
+      discountFactor[t] = 1/Math.pow(1+wacc, yearsFromVal[t]);
+      const cf = (t===12) ? (fcff[t]+tvFCFF) : fcff[t];
+      discountedCF[t] = cf*discountFactor[t];
+    }
+  }
+  const enterpriseValue = discountedCF.reduce((s,x)=>s+x,0);
+  const debtAtVal = debtEnd[2];
+  const cashAtVal = cashEnd[2];
+  const equityValue = enterpriseValue - debtAtVal + cashAtVal;
+  const intrinsicPerShare = equityValue / A.outstandingShares;
+  const upside = (intrinsicPerShare - A.currentMarketPrice)/A.currentMarketPrice;
+  const decision = upside > 0.10 ? "BUY" : (upside < -0.10 ? "SELL" : "HOLD");
+
+  return {
+    gmv,mpRev,txnVol,avgTxn,retailRev,totalRev,
+    cogs,deliveryCostPerPkg,packages,deliveryCost,totalGMV,paymentCost,totalCOS,
+    marketing,headcount,avgSalary,staffCost,itCost,otherCost,totalSGA,totalCost,
+    capex,ppeBeg,depreciation,ppeEnd,
+    debtBeg,debtEnd,interest,
+    grossProfit,ebitda,ebit,pbt,tax,pat,
+    ar,inv,ap,wc,changeWC,
+    dividends,piBeg,piEnd,reBeg,reEnd,
+    cfo,cfi,cff,netCash,cashBeg,cashEnd,
+    totalCA,totalNCA,totalAssets,totalCL,totalNCL,totalLiab,totalEquity,totalLE,bsCheck,
+    ebitAfterTax,fcff,ce,cdAfterTax,D,E,wD,wE,wacc,
+    tvFCFF,yearsFromVal,discountFactor,discountedCF,
+    enterpriseValue,debtAtVal,cashAtVal,equityValue,intrinsicPerShare,upside,decision
+  };
+}
+
+/* ---------- FORMATTERS ---------- */
+const fmt = (v, dec=1) => {
+  if(v===null||v===undefined||isNaN(v)) return "—";
+  if(Math.abs(v)<0.001) return "0.0";
+  const sign = v<0 ? "(" : "";
+  const close= v<0 ? ")" : "";
+  const abs = Math.abs(v);
+  return sign + abs.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec}) + close;
+};
+const fmtPct = (v, dec=1) => v==null||isNaN(v) ? "—" : (v*100).toFixed(dec)+"%";
+const fmtInt = (v) => v==null||isNaN(v) ? "—" : Math.round(v).toLocaleString('en-US');
+const fmtMul = (v, dec=2) => v==null||isNaN(v) ? "—" : v.toFixed(dec)+"x";
+
+/* ---------- TABLE BUILDERS ---------- */
+function buildHeader(table){
+  const thead = document.createElement('thead');
+  const tr1 = document.createElement('tr');
+  tr1.innerHTML = `<th></th><th class="unit-col">Units</th>` +
+    periodLabels.map((p,i)=>`<th class="${periodTypes[i]==='Historical'?'hist':'fcst'}">${p}</th>`).join('');
+  thead.appendChild(tr1);
+  table.appendChild(thead);
+  return document.createElement('tbody');
+}
+function row(tbody, label, vals, opts={}){
+  const tr = document.createElement('tr');
+  if(opts.cls) tr.className = opts.cls;
+  const indent = opts.indent ? ` indent-${opts.indent}` : "";
+  tr.innerHTML = `<td class="${indent.trim()}">${label}</td>
+    <td class="unit">${opts.unit||''}</td>` +
+    vals.map((v,i)=>{
+      const cls = periodTypes[i]==='Historical'?'hist':'fcst';
+      let display;
+      if(opts.fmt==='pct') display=fmtPct(v,opts.dec??1);
+      else if(opts.fmt==='int') display=fmtInt(v);
+      else if(opts.fmt==='mul') display=fmtMul(v,opts.dec??2);
+      else if(opts.fmt==='text') display=v??'—';
+      else display=fmt(v,opts.dec??1);
+      return `<td class="${cls}">${display}</td>`;
+    }).join('');
+  tbody.appendChild(tr);
+}
+function sectionRow(tbody, label){
+  const tr=document.createElement('tr'); tr.className='section-row';
+  tr.innerHTML=`<td colspan="${N+2}">${label}</td>`;
+  tbody.appendChild(tr);
+}
+
+/* ---------- RENDER: ASSUMPTIONS ---------- */
+function renderAssumptions(){
+  const t=document.getElementById('tbl-assumptions'); t.innerHTML='';
+  const tb=buildHeader(t);
+
+  sectionRow(tb,'Timing');
+  row(tb,'Period Type',periodTypes,{fmt:'text',unit:'—'});
+  row(tb,'Days in Period',daysInPeriod,{fmt:'int',unit:'#'});
+
+  sectionRow(tb,'Marketplace Revenue');
+  row(tb,'Historical GMV',A.histGMV,{unit:'USD M',dec:0});
+  row(tb,'GMV Growth Rate',A.gmvGrowth,{fmt:'pct',unit:'%'});
+  row(tb,'Transactional Take Rate',A.takeRate,{fmt:'pct',unit:'%',dec:2});
+
+  sectionRow(tb,'Retail Revenue');
+  row(tb,'Historical Transaction Volume',A.histTxnVol,{fmt:'int',unit:'# Txns'});
+  row(tb,'Transaction Volume Growth',A.txnVolGrowth,{fmt:'pct',unit:'%'});
+  row(tb,'Historical Avg Transaction Value',A.histAvgTxn,{unit:'USD',dec:0});
+  row(tb,'Avg Transaction Value Growth',A.avgTxnGrowth,{fmt:'pct',unit:'%'});
+
+  sectionRow(tb,'Cost Drivers');
+  row(tb,'COGS as % of Retail Revenue',A.cogsPct,{fmt:'pct',unit:'%',dec:2});
+  row(tb,'Delivery Cost per Package',A.histDeliveryCost,{unit:'USD',dec:2});
+  row(tb,'Delivery Cost Increase',A.deliveryIncrease,{fmt:'pct',unit:'%'});
+  row(tb,'Payment Fees as % of GMV',A.paymentPct,{fmt:'pct',unit:'%',dec:2});
+
+  sectionRow(tb,'SG&A Drivers');
+  row(tb,'Marketing as % of GMV',A.marketingPct,{fmt:'pct',unit:'%'});
+  row(tb,'Headcount',A.histHeadcount,{fmt:'int',unit:'#'});
+  row(tb,'Headcount Increase',A.hcIncrease,{fmt:'pct',unit:'%'});
+  row(tb,'Annual Avg Salary',A.histAvgSalary,{unit:'USD',dec:0});
+  row(tb,'Salary Increase',A.salaryIncrease,{fmt:'pct',unit:'%'});
+  row(tb,'IT Cost',A.histITCost,{unit:'USD M',dec:0});
+  row(tb,'IT Cost Increase',A.itIncrease,{fmt:'pct',unit:'%'});
+  row(tb,'Other Costs as % of Revenue',A.otherPct,{fmt:'pct',unit:'%'});
+
+  sectionRow(tb,'Working Capital');
+  row(tb,'DSO',A.dso,{fmt:'int',unit:'days'});
+  row(tb,'Inventory Days',A.dio,{fmt:'int',unit:'days'});
+  row(tb,'DPO',A.dpo,{fmt:'int',unit:'days'});
+
+  sectionRow(tb,'Capex & Depreciation');
+  row(tb,'Capex as % of Revenue',A.capexPct,{fmt:'pct',unit:'%'});
+  // single-value rows
+  row(tb,'Useful Life (years)',Array(N).fill(A.usefulLife),{fmt:'int',unit:'years'});
+  row(tb,'Salvage Value (% of Cost)',Array(N).fill(A.salvageValue),{fmt:'pct',unit:'%',dec:0});
+  row(tb,'WDV Depreciation Rate',Array(N).fill(A.depRateWDV),{fmt:'pct',unit:'%',dec:2});
+
+  sectionRow(tb,'Debt & Equity');
+  row(tb,'Debt Drawdown',A.debtDrawdown,{unit:'USD M',dec:0});
+  row(tb,'Scheduled Repayment',A.debtRepayment,{unit:'USD M',dec:0});
+  row(tb,'Interest Rate',Array(N).fill(A.interestRate),{fmt:'pct',unit:'%'});
+  row(tb,'Equity Infusion',A.equityInfusion,{unit:'USD M',dec:0});
+  row(tb,'Dividend Payout Ratio',Array(N).fill(A.dividendPayout),{fmt:'pct',unit:'%',dec:0});
+  row(tb,'Tax Rate',Array(N).fill(A.taxRate),{fmt:'pct',unit:'%',dec:0});
+
+  t.appendChild(tb);
+}
+
+/* ---------- RENDER: WORKING ---------- */
+function renderWorking(R){
+  const t=document.getElementById('tbl-working'); t.innerHTML='';
+  const tb=buildHeader(t);
+
+  sectionRow(tb,'Revenue Build — Marketplace');
+  row(tb,'GMV',R.gmv,{unit:'USD M'});
+  row(tb,'× Take Rate',A.takeRate,{fmt:'pct',unit:'%',dec:2,indent:1});
+  row(tb,'Marketplace Revenue',R.mpRev,{unit:'USD M',cls:'subtotal'});
+
+  sectionRow(tb,'Revenue Build — Retail');
+  row(tb,'Transaction Volume',R.txnVol,{fmt:'int',unit:'# Txns'});
+  row(tb,'Avg Transaction Value',R.avgTxn,{unit:'USD',dec:1});
+  row(tb,'Retail Revenue',R.retailRev,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Total Revenue',R.totalRev,{unit:'USD M',cls:'total'});
+
+  sectionRow(tb,'Cost of Sales');
+  row(tb,'Cost of Goods Sold',R.cogs,{unit:'USD M',indent:1});
+  row(tb,'Total GMV (Marketplace + Retail)',R.totalGMV,{unit:'USD M',indent:1});
+  row(tb,'# of Packages',R.packages,{unit:'# M',dec:1,indent:1});
+  row(tb,'Avg Delivery Cost per Package',R.deliveryCostPerPkg,{unit:'USD',dec:2,indent:1});
+  row(tb,'Cost of Delivery',R.deliveryCost,{unit:'USD M',indent:1});
+  row(tb,'Payment Fees',R.paymentCost,{unit:'USD M',indent:1});
+  row(tb,'Total Cost of Sales',R.totalCOS,{unit:'USD M',cls:'subtotal'});
+
+  sectionRow(tb,'SG&A Expenses');
+  row(tb,'Marketing Expense',R.marketing,{unit:'USD M',indent:1});
+  row(tb,'Headcount',R.headcount,{fmt:'int',unit:'#',indent:1});
+  row(tb,'Avg Annual Salary',R.avgSalary,{unit:'USD',dec:0,indent:1});
+  row(tb,'Total Staff Cost',R.staffCost,{unit:'USD M',indent:1});
+  row(tb,'Total IT Cost',R.itCost,{unit:'USD M',indent:1});
+  row(tb,'Total Other Costs',R.otherCost,{unit:'USD M',indent:1});
+  row(tb,'Total SG&A Expenses',R.totalSGA,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Total Costs',R.totalCost,{unit:'USD M',cls:'total'});
+
+  sectionRow(tb,'Working Capital');
+  row(tb,'Accounts Receivable',R.ar,{unit:'USD M',indent:1});
+  row(tb,'Inventory',R.inv,{unit:'USD M',indent:1});
+  row(tb,'Accounts Payable',R.ap,{unit:'USD M',indent:1});
+  row(tb,'Total Working Capital',R.wc,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Change in Working Capital',R.changeWC,{unit:'USD M'});
+
+  sectionRow(tb,'Property, Plant & Equipment (WDV)');
+  row(tb,'Beginning Balance',R.ppeBeg,{unit:'USD M',indent:1});
+  row(tb,'Addition — Capex',R.capex,{unit:'USD M',indent:1});
+  row(tb,'Reduction — Depreciation',R.depreciation.map(v=>-v),{unit:'USD M',indent:1});
+  row(tb,'Ending Balance — PPE',R.ppeEnd,{unit:'USD M',cls:'subtotal'});
+
+  sectionRow(tb,'Debt Schedule');
+  row(tb,'Beginning Balance',R.debtBeg,{unit:'USD M',indent:1});
+  row(tb,'Addition — Drawdown',A.debtDrawdown,{unit:'USD M',indent:1});
+  row(tb,'Reduction — Repayment',A.debtRepayment.map(v=>-v),{unit:'USD M',indent:1});
+  row(tb,'Ending Balance — Debt',R.debtEnd,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Interest Expense',R.interest,{unit:'USD M'});
+
+  sectionRow(tb,'Equity — Paid-in Capital');
+  row(tb,'Beginning Balance',R.piBeg,{unit:'USD M',indent:1});
+  row(tb,'Addition — Equity Infusion',A.equityInfusion,{unit:'USD M',indent:1});
+  row(tb,'Ending Balance — Paid-in Capital',R.piEnd,{unit:'USD M',cls:'subtotal'});
+
+  sectionRow(tb,'Equity — Retained Earnings');
+  row(tb,'Beginning Balance',R.reBeg,{unit:'USD M',indent:1});
+  row(tb,'Addition — Net Profit (PAT)',R.pat,{unit:'USD M',indent:1});
+  row(tb,'Reduction — Dividends',R.dividends.map(v=>-v),{unit:'USD M',indent:1});
+  row(tb,'Ending Balance — Retained Earnings',R.reEnd,{unit:'USD M',cls:'subtotal'});
+
+  t.appendChild(tb);
+}
+
+/* ---------- RENDER: FS ---------- */
+function renderFS(R){
+  const t=document.getElementById('tbl-fs'); t.innerHTML='';
+  const tb=buildHeader(t);
+
+  sectionRow(tb,'Profit & Loss Statement');
+  row(tb,'Total Revenue',R.totalRev,{unit:'USD M'});
+  row(tb,'Cost of Sales',R.totalCOS.map(v=>-v),{unit:'USD M'});
+  row(tb,'Gross Profit',R.grossProfit,{unit:'USD M',cls:'subtotal'});
+  row(tb,'SG&A Expenses',R.totalSGA.map(v=>-v),{unit:'USD M'});
+  row(tb,'EBITDA',R.ebitda,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Depreciation & Amortization',R.depreciation.map(v=>-v),{unit:'USD M'});
+  row(tb,'EBIT',R.ebit,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Interest Expense',R.interest.map(v=>-v),{unit:'USD M'});
+  row(tb,'Profit Before Tax',R.pbt,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Tax Expense',R.tax.map(v=>-v),{unit:'USD M'});
+  row(tb,'Profit After Tax (PAT)',R.pat,{unit:'USD M',cls:'total'});
+
+  sectionRow(tb,'Balance Sheet — Assets');
+  row(tb,'Cash',R.cashEnd,{unit:'USD M',indent:1});
+  row(tb,'Accounts Receivable',R.ar,{unit:'USD M',indent:1});
+  row(tb,'Inventory',R.inv,{unit:'USD M',indent:1});
+  row(tb,'Total Current Assets',R.totalCA,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Property, Plant & Equipment',R.ppeEnd,{unit:'USD M',indent:1});
+  row(tb,'Total Non-Current Assets',R.totalNCA,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Total Assets',R.totalAssets,{unit:'USD M',cls:'total'});
+
+  sectionRow(tb,'Balance Sheet — Liabilities & Equity');
+  row(tb,'Accounts Payable',R.ap,{unit:'USD M',indent:1});
+  row(tb,'Total Current Liabilities',R.totalCL,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Debt',R.debtEnd,{unit:'USD M',indent:1});
+  row(tb,'Total Non-Current Liabilities',R.totalNCL,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Total Liabilities',R.totalLiab,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Paid-in Capital',R.piEnd,{unit:'USD M',indent:1});
+  row(tb,'Retained Earnings',R.reEnd,{unit:'USD M',indent:1});
+  row(tb,'Total Shareholders\' Equity',R.totalEquity,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Total Liabilities + Equity',R.totalLE,{unit:'USD M',cls:'total'});
+
+  const allZero = R.bsCheck.every(v=>Math.abs(v)<0.01);
+  row(tb,'Balance Sheet Check (A − L − E)',R.bsCheck,{unit:'USD M',dec:2,cls:allZero?'check':'check fail'});
+
+  sectionRow(tb,'Cash Flow Statement');
+  row(tb,'Net Profit (PAT)',R.pat,{unit:'USD M',indent:1});
+  row(tb,'(+) Depreciation & Amortization',R.depreciation,{unit:'USD M',indent:1});
+  row(tb,'(−) Change in Working Capital',R.changeWC.map(v=>-v),{unit:'USD M',indent:1});
+  row(tb,'Cash Flow from Operating Activities',R.cfo,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Capital Expenditure',R.capex.map(v=>-v),{unit:'USD M',indent:1});
+  row(tb,'Cash Flow from Investing Activities',R.cfi,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Debt Drawdown',A.debtDrawdown,{unit:'USD M',indent:1});
+  row(tb,'Debt Repayment',A.debtRepayment.map(v=>-v),{unit:'USD M',indent:1});
+  row(tb,'Equity Infusion',A.equityInfusion,{unit:'USD M',indent:1});
+  row(tb,'Dividends',R.dividends.map(v=>-v),{unit:'USD M',indent:1});
+  row(tb,'Cash Flow from Financing Activities',R.cff,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Net Change in Cash',R.netCash,{unit:'USD M',cls:'subtotal'});
+  row(tb,'Beginning Cash Balance',R.cashBeg,{unit:'USD M'});
+  row(tb,'Ending Cash Balance',R.cashEnd,{unit:'USD M',cls:'total'});
+
+  t.appendChild(tb);
+
+  document.getElementById('bs-check-status').innerHTML =
+    allZero
+      ? `<b>Balance sheet check passed</b> — Assets = Liabilities + Equity in all 13 periods (max deviation < 0.01).`
+      : `<b style="color:var(--bad)">Balance sheet check FAILED</b> — review articulation.`;
+}
+
+/* ---------- RENDER: VALUATION ---------- */
+function renderValuation(R){
+  const t=document.getElementById('tbl-valuation'); t.innerHTML='';
+  const tb=buildHeader(t);
+
+  sectionRow(tb,'FCFF Build');
+  row(tb,'EBIT',R.ebit,{unit:'USD M'});
+  row(tb,'× (1 − Tax Rate)',Array(N).fill(1-A.taxRate),{fmt:'mul',dec:2,unit:'x'});
+  row(tb,'EBIT × (1 − T)',R.ebitAfterTax,{unit:'USD M',cls:'subtotal'});
+  row(tb,'(+) Depreciation',R.depreciation,{unit:'USD M'});
+  row(tb,'(−) Change in WC',R.changeWC.map(v=>-v),{unit:'USD M'});
+  row(tb,'(−) Capital Expenditure',R.capex.map(v=>-v),{unit:'USD M'});
+  row(tb,'Free Cash Flow to Firm (FCFF)',R.fcff,{unit:'USD M',cls:'total'});
+
+  sectionRow(tb,'Discounting');
+  row(tb,'Years from Valuation Date',R.yearsFromVal,{fmt:'int',unit:'years'});
+  row(tb,'Discount Factor',R.discountFactor.map((v,i)=>i>=FCST_START?v:null),{fmt:'mul',dec:4,unit:'x'});
+  // Forecast FCFF + Terminal value at FY34
+  const tvRow = arr(); tvRow[12] = R.tvFCFF;
+  row(tb,'Terminal Value @ FY34',tvRow,{unit:'USD M'});
+  const cfForVal = R.fcff.map((v,i)=> i>=FCST_START ? (i===12?v+R.tvFCFF:v) : null);
+  row(tb,'Cash Flow for Valuation',cfForVal,{unit:'USD M'});
+  row(tb,'Discounted Cash Flow',R.discountedCF.map((v,i)=>i>=FCST_START?v:null),{unit:'USD M',cls:'subtotal'});
+
+  t.appendChild(tb);
+
+  // WACC table (compact, single column)
+  const wTable = document.getElementById('tbl-wacc'); wTable.innerHTML='';
+  const wHead = document.createElement('thead');
+  wHead.innerHTML = `<tr><th></th><th class="unit-col">Units</th><th class="fcst" style="text-align:right">Value</th></tr>`;
+  wTable.appendChild(wHead);
+  const wb = document.createElement('tbody');
+
+  const sec=(label)=>{const tr=document.createElement('tr');tr.className='section-row';tr.innerHTML=`<td colspan="3">${label}</td>`;wb.appendChild(tr);};
+  const r2=(label,v,unit,fmtFn,cls)=>{
+    const tr=document.createElement('tr');
+    if(cls)tr.className=cls;
+    tr.innerHTML=`<td>${label}</td><td class="unit">${unit||''}</td><td class="fcst" style="text-align:right">${fmtFn(v)}</td>`;
+    wb.appendChild(tr);
+  };
+
+  sec('Cost of Equity (CAPM)');
+  r2('Risk-Free Rate (Rf)', A.rf, '%', v=>fmtPct(v,1));
+  r2('Beta (β)', A.beta, 'x', v=>fmtMul(v,2));
+  r2('Equity Risk Premium', A.erp, '%', v=>fmtPct(v,1));
+  r2('Cost of Equity (Ce)', R.ce, '%', v=>fmtPct(v,2),'subtotal');
+
+  sec('Cost of Debt');
+  r2('Pre-tax Cost of Debt (Cd)', A.costDebtPre, '%', v=>fmtPct(v,1));
+  r2('× (1 − Tax Rate)', 1-A.taxRate, 'x', v=>fmtMul(v,2));
+  r2('After-tax Cost of Debt', R.cdAfterTax, '%', v=>fmtPct(v,2),'subtotal');
+
+  sec('Capital Structure (FY24)');
+  r2('Debt (D)', R.D, 'USD M', v=>fmt(v,1));
+  r2('Equity (E)', R.E, 'USD M', v=>fmt(v,1));
+  r2('D / (D+E)', R.wD, '%', v=>fmtPct(v,2));
+  r2('E / (D+E)', R.wE, '%', v=>fmtPct(v,2));
+
+  sec('WACC');
+  r2('WACC', R.wacc, '%', v=>fmtPct(v,2),'total');
+
+  sec('Terminal Value');
+  r2('Terminal Growth Rate (g)', A.terminalGrowth, '%', v=>fmtPct(v,1));
+  r2('FCFF FY34', R.fcff[12], 'USD M', v=>fmt(v,1));
+  r2('Terminal Value @ FY34', R.tvFCFF, 'USD M', v=>fmt(v,1),'subtotal');
+
+  sec('Enterprise & Equity Value');
+  r2('Sum of Discounted FCFF + TV', R.enterpriseValue, 'USD M', v=>fmt(v,1));
+  r2('Enterprise Value (EV)', R.enterpriseValue, 'USD M', v=>fmt(v,1),'subtotal');
+  r2('(−) Debt @ Valuation Date', R.debtAtVal, 'USD M', v=>fmt(v,1));
+  r2('(+) Cash @ Valuation Date', R.cashAtVal, 'USD M', v=>fmt(v,1));
+  r2('Equity Value', R.equityValue, 'USD M', v=>fmt(v,1),'total');
+
+  sec('Per Share');
+  r2('Outstanding Shares', A.outstandingShares, 'M', v=>fmt(v,0));
+  r2('Intrinsic Value / Share', R.intrinsicPerShare, 'USD', v=>'$'+fmt(v,2),'subtotal');
+  r2('Current Market Price', A.currentMarketPrice, 'USD', v=>'$'+fmt(v,2));
+  r2('Upside / (Downside)', R.upside, '%', v=>fmtPct(v,1),'total');
+
+  wTable.appendChild(wb);
+
+  // KPI cards (valuation)
+  const kpis = [
+    {lbl:'Enterprise Value', val:'$'+fmt(R.enterpriseValue,0)+' M', cls:'gold'},
+    {lbl:'Equity Value', val:'$'+fmt(R.equityValue,0)+' M', cls:'gold'},
+    {lbl:'Intrinsic Value / Share', val:'$'+fmt(R.intrinsicPerShare,2), cls:R.intrinsicPerShare>A.currentMarketPrice?'green':'red', meta:'Market: $'+fmt(A.currentMarketPrice,2)},
+    {lbl:'WACC', val:fmtPct(R.wacc,2), cls:'', meta:'g = '+fmtPct(A.terminalGrowth,1)+'  ·  Ce = '+fmtPct(R.ce,2)},
+  ];
+  document.getElementById('kpi-valuation').innerHTML = kpis.map(k=>
+    `<div class="kpi"><div class="lbl">${k.lbl}</div><div class="val ${k.cls}">${k.val}</div>${k.meta?`<div class="meta">${k.meta}</div>`:''}</div>`
+  ).join('');
+
+  // Decision
+  const verdict = R.decision;
+  const vEl = document.getElementById('verdict-text');
+  vEl.textContent = verdict;
+  vEl.className = 'verdict '+(verdict==='BUY'?'buy':verdict==='SELL'?'sell':'hold');
+  document.getElementById('upside-text').textContent =
+    (R.upside>=0?'+':'') + fmtPct(R.upside,1);
+  document.getElementById('upside-text').style.color =
+    R.upside>=0 ? 'var(--good)' : 'var(--bad)';
+}
+
+/* ---------- RENDER: SUMMARY ---------- */
+function renderSummary(R){
+  // KPIs
+  const rev24 = R.totalRev[2], rev34 = R.totalRev[12];
+  const revCAGR = Math.pow(rev34/rev24, 1/10)-1;
+  const ebitdaMargin34 = R.ebitda[12]/R.totalRev[12];
+  const kpis = [
+    {lbl:'Revenue FY24', val:'$'+fmt(rev24,0)+' M', cls:''},
+    {lbl:'Revenue FY34', val:'$'+fmt(rev34,0)+' M', cls:'gold'},
+    {lbl:'Revenue CAGR (FY24→34)', val:fmtPct(revCAGR,1), cls:'green'},
+    {lbl:'EBITDA Margin FY34', val:fmtPct(ebitdaMargin34,1), cls:'gold'},
+  ];
+  document.getElementById('kpi-summary').innerHTML = kpis.map(k=>
+    `<div class="kpi"><div class="lbl">${k.lbl}</div><div class="val ${k.cls}">${k.val}</div></div>`
+  ).join('');
+
+  // Revenue & profitability table
+  const t=document.getElementById('tbl-summary-rev'); t.innerHTML='';
+  const tb=buildHeader(t);
+  sectionRow(tb,'Revenue & Profitability');
+  row(tb,'Marketplace Revenue',R.mpRev,{unit:'USD M'});
+  row(tb,'Retail Revenue',R.retailRev,{unit:'USD M'});
+  row(tb,'Total Revenue',R.totalRev,{unit:'USD M',cls:'subtotal'});
+  row(tb,'EBITDA',R.ebitda,{unit:'USD M'});
+  const ebMargin = R.ebitda.map((e,i)=>e/R.totalRev[i]);
+  row(tb,'EBITDA Margin',ebMargin,{fmt:'pct',unit:'%'});
+  row(tb,'PAT',R.pat,{unit:'USD M'});
+  const patMargin = R.pat.map((p,i)=>p/R.totalRev[i]);
+  row(tb,'PAT Margin',patMargin,{fmt:'pct',unit:'%'});
+  row(tb,'FCFF',R.fcff,{unit:'USD M',cls:'subtotal'});
+  t.appendChild(tb);
+
+  // Valuation summary block
+  const v=document.getElementById('tbl-summary-val'); v.innerHTML='';
+  const vh=document.createElement('thead');
+  vh.innerHTML=`<tr><th>Valuation Output</th><th class="unit-col">Units</th><th class="fcst" style="text-align:right">Value</th></tr>`;
+  v.appendChild(vh);
+  const vb=document.createElement('tbody');
+  const vr=(label,val,unit,cls)=>{
+    const tr=document.createElement('tr');if(cls)tr.className=cls;
+    tr.innerHTML=`<td>${label}</td><td class="unit">${unit||''}</td><td class="fcst" style="text-align:right">${val}</td>`;
+    vb.appendChild(tr);
+  };
+  const sec=(label)=>{const tr=document.createElement('tr');tr.className='section-row';tr.innerHTML=`<td colspan="3">${label}</td>`;vb.appendChild(tr);};
+
+  sec('Discount Rate');
+  vr('Cost of Equity (Ce)', fmtPct(R.ce,2), '%');
+  vr('After-tax Cost of Debt', fmtPct(R.cdAfterTax,2), '%');
+  vr('WACC', fmtPct(R.wacc,2), '%','subtotal');
+
+  sec('Enterprise → Equity');
+  vr('Enterprise Value', '$'+fmt(R.enterpriseValue,1), 'USD M');
+  vr('Less: Debt', '$'+fmt(R.debtAtVal,1), 'USD M');
+  vr('Add: Cash', '$'+fmt(R.cashAtVal,1), 'USD M');
+  vr('Equity Value', '$'+fmt(R.equityValue,1), 'USD M','subtotal');
+
+  sec('Per Share');
+  vr('Intrinsic Value / Share', '$'+fmt(R.intrinsicPerShare,2), 'USD','total');
+  vr('Current Market Price', '$'+fmt(A.currentMarketPrice,2), 'USD');
+  vr('Upside / (Downside)', (R.upside>=0?'+':'')+fmtPct(R.upside,1), '%','total');
+  vr('Recommendation', R.decision, '—','total');
+
+  v.appendChild(vb);
+}
+
+/* ---------- TABS ---------- */
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ---------- INIT ---------- */
+function rerender(){
+  const R = compute();
+  renderAssumptions();
+  renderWorking(R);
+  renderFS(R);
+  renderValuation(R);
+  renderSummary(R);
+}
+rerender();
+</script>
+</body>
+</html>

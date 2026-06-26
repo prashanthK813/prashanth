@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoIntel Terminal — Live Geopolitical Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg0:#020810; --bg1:#040d1c; --bg2:#081422; --bg3:#0c1c30;
+  --br:#152a48;  --br2:#1e3a5f;
+  --red:#FF2234; --ora:#FF7700; --yel:#FFB800; --grn:#00FF88; --blu:#00C8FF;
+  --t1:#E4EDFF;  --t2:#7A8FAA;  --t3:#3A5070;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg0);color:var(--t1);font-family:'JetBrains Mono',monospace;font-size:12px;display:flex;flex-direction:column;}
+
+/* ── HEADER ── */
+#hdr{height:46px;background:var(--bg1);border-bottom:1px solid var(--br);display:flex;align-items:center;gap:12px;padding:0 12px;flex-shrink:0;}
+#logo{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--blu);white-space:nowrap;padding-right:12px;border-right:1px solid var(--br);}
+.gi{width:28px;height:28px;background:radial-gradient(circle at 35% 35%,#1a4070,#020810);border:1.5px solid var(--blu);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 0 12px #00C8FF44;}
+.live-p{background:var(--red);color:#fff;font-size:8px;font-weight:700;padding:2px 5px;border-radius:2px;animation:blink 1.4s infinite;letter-spacing:.05em;}
+@keyframes blink{50%{opacity:.3;}}
+#tkr-box{flex:1;overflow:hidden;border:1px solid var(--br);border-radius:2px;height:26px;background:var(--bg0);}
+#tkr-trk{display:inline-flex;align-items:center;height:100%;white-space:nowrap;animation:sl 55s linear infinite;}
+@keyframes sl{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.tk{display:inline-flex;align-items:center;gap:5px;padding:0 13px;border-right:1px solid var(--br);font-size:10.5px;height:100%;}
+.ts{color:var(--blu);font-weight:600;}.tp{color:var(--t1);}.tu{color:var(--grn);}.td{color:var(--red);}
+#clk{font-size:9.5px;color:var(--t3);white-space:nowrap;text-align:right;line-height:1.55;flex-shrink:0;}
+
+/* ── NAV ── */
+#nav{height:38px;background:var(--bg1);border-bottom:1px solid var(--br2);display:flex;align-items:center;padding:0 6px;gap:1px;flex-shrink:0;}
+.nb{background:none;border:none;color:var(--t2);font-family:inherit;font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;padding:7px 11px;border-radius:2px;cursor:pointer;transition:background .1s,color .1s;position:relative;}
+.nb:hover{background:var(--bg3);color:var(--t1);}
+.nb.on{color:var(--blu);background:var(--bg3);}
+.nb.on::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--blu);}
+#nav-r{margin-left:auto;font-size:9.5px;color:var(--t3);display:flex;align-items:center;gap:8px;}
+#nav-r em{color:var(--red);font-style:normal;font-weight:700;}
+
+/* ── MAIN ── */
+#main{flex:1;display:flex;overflow:hidden;min-height:0;}
+
+/* ── LEFT PANEL ── */
+#lp{width:216px;border-right:1px solid var(--br);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.ph{padding:6px 10px;border-bottom:1px solid var(--br);background:var(--bg1);font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--t2);display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--red);animation:blink 1s infinite;}
+#is{flex:1;overflow-y:auto;padding:5px;}
+#is::-webkit-scrollbar{width:2px;}
+#is::-webkit-scrollbar-thumb{background:var(--br2);}
+.ii{padding:7px 8px;margin-bottom:4px;border:1px solid var(--br);background:var(--bg1);border-radius:2px;cursor:pointer;transition:border-color .12s;}
+.ii:hover{border-color:var(--blu);}
+.ii.critical{border-left:3px solid var(--red);}
+.ii.high{border-left:3px solid var(--ora);}
+.ii.medium{border-left:3px solid var(--yel);}
+.ii.low{border-left:3px solid var(--grn);}
+.ii-top{display:flex;justify-content:space-between;margin-bottom:3px;}
+.ii-tm{font-size:9px;color:var(--t3);}
+.ii-rg{font-size:9px;color:var(--blu);font-weight:600;text-transform:uppercase;}
+.ii-tx{font-size:10px;color:var(--t1);line-height:1.45;}
+.ii-src{font-size:9px;color:var(--t3);margin-top:3px;}
+
+/* ── CENTER ── */
+#cp{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+#gc{padding:5px 10px;border-bottom:1px solid var(--br);background:var(--bg1);display:flex;align-items:center;gap:5px;flex-shrink:0;flex-wrap:wrap;}
+.cb{background:var(--bg2);border:1px solid var(--br);color:var(--t2);font-family:inherit;font-size:9.5px;padding:3px 9px;border-radius:2px;cursor:pointer;transition:all .1s;}
+.cb:hover,.cb.on{background:var(--bg3);border-color:var(--blu);color:var(--blu);}
+.sp{width:1px;height:14px;background:var(--br);}
+.leg{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.li{display:flex;align-items:center;gap:4px;font-size:9.5px;color:var(--t2);}
+.ld{width:7px;height:7px;border-radius:50%;}
+
+#ga{flex:1;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 40%,#081828 0%,#020810 68%);position:relative;overflow:hidden;min-height:0;}
+
+/* Globe stat chips */
+#gst{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;pointer-events:none;}
+.gch{background:rgba(2,8,16,.9);border:1px solid var(--br2);padding:5px 14px;border-radius:2px;display:flex;flex-direction:column;align-items:center;backdrop-filter:blur(4px);}
+.gcv{font-size:20px;font-weight:700;line-height:1;}
+.gcl{font-size:8.5px;color:var(--t2);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+
+/* Branding badge */
+#badge{position:absolute;top:14px;left:14px;font-size:9px;color:var(--t3);border:1px solid var(--br);padding:3px 9px;border-radius:2px;background:rgba(2,8,16,.85);white-space:nowrap;}
+
+/* Tooltip */
+#tip{position:absolute;background:rgba(4,13,28,.95);border:1px solid var(--br2);border-radius:3px;padding:6px 10px;font-size:10px;pointer-events:none;display:none;white-space:nowrap;z-index:10;}
+.tip-nm{color:var(--t1);font-weight:600;margin-bottom:2px;}
+.tip-sv{font-size:9px;text-transform:uppercase;letter-spacing:.06em;}
+
+/* ── RIGHT PANEL ── */
+#rp{width:238px;border-left:1px solid var(--br);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;flex-shrink:0;}
+#rp::-webkit-scrollbar{width:2px;}
+#rp::-webkit-scrollbar-thumb{background:var(--br2);}
+.rs{border-bottom:1px solid var(--br);}
+.apr{margin:6px;padding:7px 9px;background:rgba(255,34,51,.07);border:1px solid rgba(255,34,51,.3);border-radius:2px;}
+.apr-h{color:var(--red);font-weight:700;font-size:9px;text-transform:uppercase;margin-bottom:3px;}
+.apr-t{color:var(--t2);font-size:9.5px;line-height:1.45;}
+.mr{display:flex;align-items:center;padding:4px 8px;border-bottom:1px solid rgba(21,42,72,.5);cursor:pointer;transition:background .08s;}
+.mr:hover{background:var(--bg2);}
+.mr:last-child{border-bottom:none;}
+.ms{font-size:10.5px;font-weight:600;color:var(--blu);flex-shrink:0;}
+.mn{flex:1;font-size:9px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 5px;}
+.mp{font-size:10.5px;text-align:right;min-width:58px;}
+.mc{font-size:10px;text-align:right;min-width:50px;}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:7px;}
+.cc{border:1px solid var(--br);border-radius:2px;padding:7px 5px;text-align:center;background:var(--bg1);}
+.cv{font-size:22px;font-weight:700;line-height:1;}
+.cl{font-size:8.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+
+/* ── FOOTER ── */
+#ftr{height:30px;background:var(--bg1);border-top:1px solid var(--br);display:flex;align-items:center;overflow:hidden;flex-shrink:0;}
+#fl{background:var(--red);color:#fff;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:0 10px;height:100%;display:flex;align-items:center;flex-shrink:0;}
+#fw{flex:1;overflow:hidden;}
+#fn{white-space:nowrap;font-size:10.5px;color:var(--t2);display:inline-block;animation:sn 110s linear infinite;}
+@keyframes sn{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+
+/* Flash animation for market updates */
+@keyframes flash-up{0%,100%{background:transparent;}50%{background:rgba(0,255,136,.08);}}
+@keyframes flash-dn{0%,100%{background:transparent;}50%{background:rgba(255,34,51,.08);}}
+.fl-up{animation:flash-up .6s ease;}
+.fl-dn{animation:flash-dn .6s ease;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="hdr">
+  <div id="logo">
+    <div class="gi">🌐</div>
+    GEOINTEL<span style="font-weight:300;color:var(--t3);margin-left:6px">TERMINAL</span>
+    <span class="live-p">LIVE</span>
+  </div>
+  <div id="tkr-box"><div id="tkr-trk"></div></div>
+  <div id="clk">UTC ––:––:––<br>IST ––:––:––</div>
+</div>
+
+<!-- NAV -->
+<div id="nav">
+  <button class="nb on" data-t="map">🗺 Intel Map</button>
+  <button class="nb" data-t="stream">📡 War Stream</button>
+  <button class="nb" data-t="commod">📊 Commodities</button>
+  <button class="nb" data-t="pred">🔮 Predictions</button>
+  <button class="nb" data-t="rep">📋 Reports</button>
+  <div id="nav-r">Conflicts:&nbsp;<em id="nc">14</em>&nbsp;│&nbsp;Critical:&nbsp;<em id="ncc">5</em></div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- LEFT PANEL -->
+  <div id="lp">
+    <div class="ph"><div class="dot"></div>Latest Intel</div>
+    <div id="is"></div>
+  </div>
+
+  <!-- CENTER -->
+  <div id="cp">
+    <div id="gc">
+      <button class="cb on">● Conflict</button>
+      <div class="sp"></div>
+      <button class="cb">📡 Live Tracking</button>
+      <div class="sp"></div>
+      <button class="cb">☢ Contamination</button>
+      <div class="sp"></div>
+      <button class="cb">📈 Spread Risk</button>
+      <div class="leg">
+        <div class="li"><div class="ld" style="background:var(--red)"></div>War</div>
+        <div class="li"><div class="ld" style="background:var(--ora)"></div>Conflict</div>
+        <div class="li"><div class="ld" style="background:var(--yel)"></div>Tension</div>
+      </div>
+    </div>
+    <div id="ga">
+      <svg id="gsvg" style="display:block"></svg>
+      <div id="gst">
+        <div class="gch"><div class="gcv" style="color:var(--red)">14</div><div class="gcl">Active Zones</div></div>
+        <div class="gch"><div class="gcv" style="color:var(--ora)">3</div><div class="gcl">New Today</div></div>
+        <div class="gch"><div class="gcv" style="color:var(--yel)">$8.2T</div><div class="gcl">At-Risk GDP</div></div>
+      </div>
+      <div id="badge">Working in JPMorgan be like 📊</div>
+      <div id="tip"><div class="tip-nm" id="tip-nm"></div><div class="tip-sv" id="tip-sv"></div></div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="rp">
+    <div class="apr">
+      <div class="apr-h">⚠ Active Critical Alert</div>
+      <div class="apr-t">Red Sea: 3 vessels diverted. Houthi drone activity elevated near Bab al-Mandab strait.</div>
+    </div>
+    <div class="rs">
+      <div class="ph">🏭 Defense Stocks</div>
+      <div id="dr"></div>
+    </div>
+    <div class="rs">
+      <div class="ph">⚡ Commodities</div>
+      <div id="cr"></div>
+    </div>
+    <div class="rs">
+      <div class="ph" style="background:rgba(255,34,51,.08)">🚨 Conflict Summary</div>
+      <div class="cgrid">
+        <div class="cc"><div class="cv" style="color:var(--red)">5</div><div class="cl">Critical</div></div>
+        <div class="cc"><div class="cv" style="color:var(--ora)">6</div><div class="cl">High</div></div>
+        <div class="cc"><div class="cv" style="color:var(--yel)">2</div><div class="cl">Medium</div></div>
+        <div class="cc"><div class="cv" style="color:var(--grn)">1</div><div class="cl">Low</div></div>
+      </div>
+    </div>
+    <div class="rs">
+      <div class="ph">🛡 Defense ETFs</div>
+      <div id="etf-rows"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div id="ftr">
+  <div id="fl">⚡ BREAKING</div>
+  <div id="fw"><div id="fn"></div></div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   DATA
+══════════════════════════════════════════════════════════ */
+const STK = [
+  {s:'LMT', n:'Lockheed Martin',  p:547.23, c:+2.47,  pc:+0.45},
+  {s:'RTX', n:'Raytheon Tech.',   p:126.78, c:+1.23,  pc:+0.98},
+  {s:'GD',  n:'Gen. Dynamics',    p:292.15, c:-0.85,  pc:-0.29},
+  {s:'NOC', n:'Northrop Grum.',   p:474.92, c:+3.18,  pc:+0.67},
+  {s:'BA',  n:'Boeing Co.',       p:178.45, c:-2.11,  pc:-1.17},
+  {s:'HII', n:'Huntington I.',    p:238.67, c:+1.05,  pc:+0.44},
+  {s:'KTOS',n:'Kratos Defense',   p:28.34,  c:+0.67,  pc:+2.42},
+  {s:'LDOS',n:'Leidos Holdings',  p:162.33, c:+0.45,  pc:+0.28},
+];
+const COM = [
+  {s:'WTI',   n:'WTI Crude',     p:79.44,   c:+1.23, pc:+1.57},
+  {s:'BRENT', n:'Brent Crude',   p:83.21,   c:+1.45, pc:+1.77},
+  {s:'NG',    n:'Natural Gas',   p:2.87,    c:-0.04, pc:-1.38},
+  {s:'GOLD',  n:'Gold',          p:2342.50, c:+8.70, pc:+0.37},
+  {s:'SILV',  n:'Silver',        p:27.82,   c:+0.34, pc:+1.24},
+  {s:'WEAT',  n:'Wheat',         p:542.25,  c:+5.50, pc:+1.02},
+  {s:'CORN',  n:'Corn',          p:448.75,  c:+2.25, pc:+0.50},
+  {s:'PLAT',  n:'Platinum',      p:1024.50, c:+12.3, pc:+1.22},
+];
+const ETF = [
+  {s:'ITA',  n:'iShares Def.',   p:131.44, c:+1.12, pc:+0.86},
+  {s:'PPA',  n:'Invesco Aero.',  p:92.67,  c:+0.78, pc:+0.85},
+  {s:'DFEN', n:'Dir. 3x Def.',   p:24.33,  c:+0.91, pc:+3.89},
+];
+const ZON = [
+  {n:'Ukraine-Russia', lat:49.5, lon:31.5,  sv:'critical', tp:'war'},
+  {n:'Gaza Strip',     lat:31.4, lon:34.4,  sv:'critical', tp:'war'},
+  {n:'Lebanon',        lat:33.9, lon:35.5,  sv:'high',     tp:'conflict'},
+  {n:'Iran Tensions',  lat:32.4, lon:53.7,  sv:'high',     tp:'tension'},
+  {n:'Yemen/Red Sea',  lat:15.6, lon:44.0,  sv:'critical', tp:'conflict'},
+  {n:'Sudan',          lat:15.0, lon:29.0,  sv:'critical', tp:'war'},
+  {n:'Myanmar',        lat:17.2, lon:96.5,  sv:'high',     tp:'conflict'},
+  {n:'Taiwan Strait',  lat:23.0, lon:121.0, sv:'high',     tp:'tension'},
+  {n:'S. China Sea',   lat:14.0, lon:114.0, sv:'medium',   tp:'tension'},
+  {n:'Sahel Region',   lat:14.0, lon:0.0,   sv:'medium',   tp:'conflict'},
+  {n:'Ethiopia',       lat:13.5, lon:39.5,  sv:'high',     tp:'conflict'},
+  {n:'Pak-Afghan',     lat:33.5, lon:66.0,  sv:'medium',   tp:'tension'},
+  {n:'India-China LAC',lat:32.0, lon:79.0,  sv:'medium',   tp:'tension'},
+  {n:'North Korea',    lat:40.0, lon:127.0, sv:'critical', tp:'tension'},
+];
+const INTEL = [
+  {t:'09:47',r:'Middle East',src:'Reuters',  sv:'critical',tx:'Iran nuclear talks collapse; IAEA denied access to Fordow enrichment facility. Sanctions escalation expected.'},
+  {t:'09:31',r:'Ukraine',    src:'AP Wire',  sv:'critical',tx:'Ukraine confirms large-scale drone strike on Crimean bridge infrastructure. Three explosions reported.'},
+  {t:'09:14',r:'East Asia',  src:'Bloomberg',sv:'high',    tx:'PLA live-fire exercises 40nm from Taiwan\'s eastern coast; USS Reagan repositioned to Philippine Sea.'},
+  {t:'08:58',r:'Africa',     src:'UN OCHA',  sv:'critical',tx:'UN warns critical famine in Sudan conflict zones — 5M face acute starvation; aid convoy blocked.'},
+  {t:'08:42',r:'Middle East',src:'IDF Cmd.', sv:'high',    tx:'IDF confirms overnight precision strikes on Hezbollah weapons depots in southern Lebanon.'},
+  {t:'08:27',r:'Red Sea',    src:'CENTCOM',  sv:'critical',tx:'Houthi ballistic missile intercept: USS Gravely engages inbound near Bab al-Mandab. All crew safe.'},
+  {t:'08:13',r:'South Asia', src:'TOI',      sv:'medium',  tx:'India rejects PLA patrol at Depsang plains; troops remain forward-deployed at LAC.'},
+  {t:'07:55',r:'Russia',     src:'OSINT',    sv:'high',    tx:'Wagner Group faction re-enters Belarus. Western NATO members placed on heightened alert.'},
+];
+const NEWS_ITEMS = [
+  '▶ BREAKING: Iranian IRGC conducts surprise naval exercises near Strait of Hormuz',
+  '▶ MARKETS: Defense sector +2.3% as geopolitical risk premium surges — LMT +2.4%  RTX +1.8%  NOC +0.7%',
+  '▶ UN SECURITY COUNCIL: Emergency session called on Red Sea shipping lane attacks',
+  '▶ COMMODITIES: Brent crude surges past $83/bbl on Middle East supply disruption fears',
+  '▶ INTEL: OSINT confirms large-scale Russian long-range drone production ramp-up in Alabuga',
+  '▶ NORTH KOREA: Long-range ICBM launch detected from Pyongyang; Japan J-Alert issued',
+  '▶ CHINA: PLA Southern Command expands live-fire drill perimeter in Taiwan Strait',
+  '▶ AFRICA: Third Sahel coup attempt in 18 months; UN peacekeepers begin emergency withdrawal',
+  '▶ BANKING: JPMorgan, Goldman Sachs increase geopolitical risk weighting in all portfolio models',
+  "▶ SHIPPING: Lloyd's of London raises war risk premiums for Persian Gulf transit by 40%",
+  '▶ ANALYSIS: Defense sector P/E at 5-year high as conflict escalation drives government procurement cycles',
+];
+
+/* ══════════════════════════════════════════════════════════
+   UTILS
+══════════════════════════════════════════════════════════ */
+const f2  = n => n.toFixed(2);
+const sign = n => n >= 0 ? '+' : '';
+const col  = up => `color:var(${up ? '--grn' : '--red'})`;
+const svCol = s => s==='critical'?'#FF2234':s==='high'?'#FF7700':s==='medium'?'#FFB800':'#00FF88';
+const svR   = s => s==='critical'?5.5:s==='high'?4.5:3.5;
+
+/* ══════════════════════════════════════════════════════════
+   RENDER: ROWS
+══════════════════════════════════════════════════════════ */
+function renderRows(id, data, sw) {
+  document.getElementById(id).innerHTML = data.map(d => {
+    const up = d.c >= 0;
+    return `<div class="mr" title="${d.n}">
+      <div class="ms" style="width:${sw}px">${d.s}</div>
+      <div class="mn">${d.n}</div>
+      <div class="mp">${f2(d.p)}</div>
+      <div class="mc" style="${col(up)}">${sign(d.pc)}${f2(d.pc)}%</div>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════
+   RENDER: INTEL FEED
+══════════════════════════════════════════════════════════ */
+function renderIntel() {
+  document.getElementById('is').innerHTML = INTEL.map(i => `
+    <div class="ii ${i.sv}">
+      <div class="ii-top"><span class="ii-tm">${i.t} IST</span><span class="ii-rg">${i.r}</span></div>
+      <div class="ii-tx">${i.tx}</div>
+      <div class="ii-src">via ${i.src}</div>
+    </div>`).join('');
+}
+
+/* ══════════════════════════════════════════════════════════
+   RENDER: TICKER
+══════════════════════════════════════════════════════════ */
+function buildTicker() {
+  const all = [...STK, ...COM];
+  const dup = [...all, ...all];
+  document.getElementById('tkr-trk').innerHTML = dup.map(d => {
+    const up = d.c >= 0;
+    return `<span class="tk">
+      <span class="ts">${d.s}</span>
+      <span class="tp">${f2(d.p)}</span>
+      <span class="${up?'tu':'td'}">${up?'▲':'▼'}${f2(Math.abs(d.pc))}%</span>
+    </span>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════
+   RENDER: NEWS TICKER
+══════════════════════════════════════════════════════════ */
+function buildNews() {
+  const sep = '   ◈   ';
+  const txt = NEWS_ITEMS.join(sep) + sep;
+  document.getElementById('fn').textContent = txt + txt;
+}
+
+/* ══════════════════════════════════════════════════════════
+   CLOCK
+══════════════════════════════════════════════════════════ */
+function updateClock() {
+  const n = new Date();
+  const p = x => String(x).padStart(2,'0');
+  const uh = n.getUTCHours(), um = n.getUTCMinutes(), us = n.getUTCSeconds();
+  const istMin = (uh * 60 + um + 330) % 1440;
+  const ih = Math.floor(istMin / 60), im = istMin % 60;
+  document.getElementById('clk').innerHTML =
+    `UTC&nbsp;${p(uh)}:${p(um)}:${p(us)}<br>IST&nbsp;${p(ih)}:${p(im)}:${p(us)}`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   D3 GLOBE
+══════════════════════════════════════════════════════════ */
+function initGlobe() {
+  const NS = 'http://www.w3.org/2000/svg';
+  const ar = document.getElementById('ga');
+  const W = ar.clientWidth, H = ar.clientHeight;
+  const sz = Math.min(W * 0.82, H * 0.90);
+  const R  = sz / 2;
+
+  const svg  = d3.select('#gsvg').attr('width', sz).attr('height', sz);
+  const proj = d3.geoOrthographic()
+    .scale(R - 4).translate([sz/2, sz/2])
+    .clipAngle(90).rotate([10, -20]);
+  const pFn  = d3.geoPath().projection(proj);
+  const grat = d3.geoGraticule()();
+
+  /* ── Defs ── */
+  const defs = svg.append('defs');
+
+  const sg = defs.append('radialGradient').attr('id','sg').attr('cx','32%').attr('cy','32%');
+  sg.append('stop').attr('offset','0%').attr('stop-color','#0d2845');
+  sg.append('stop').attr('offset','55%').attr('stop-color','#061525');
+  sg.append('stop').attr('offset','100%').attr('stop-color','#020810');
+
+  const atm = defs.append('radialGradient').attr('id','atm').attr('cx','50%').attr('cy','50%');
+  atm.append('stop').attr('offset','72%').attr('stop-color','transparent');
+  atm.append('stop').attr('offset','100%').attr('stop-color','#00C8FF').attr('stop-opacity','0.14');
+
+  const hlt = defs.append('radialGradient').attr('id','hlt').attr('cx','30%').attr('cy','28%');
+  hlt.append('stop').attr('offset','0%').attr('stop-color','#ffffff').attr('stop-opacity','0.04');
+  hlt.append('stop').attr('offset','100%').attr('stop-color','transparent');
+
+  const gf = defs.append('filter').attr('id','gf').attr('x','-40%').attr('y','-40%').attr('width','180%').attr('height','180%');
+  gf.append('feGaussianBlur').attr('in','SourceGraphic').attr('stdDeviation','3').attr('result','b');
+  const fm = gf.append('feMerge');
+  fm.append('feMergeNode').attr('in','b');
+  fm.append('feMergeNode').attr('in','SourceGraphic');
+
+  /* ── Sphere layers ── */
+  svg.append('circle').attr('cx',sz/2).attr('cy',sz/2).attr('r',R+16).attr('fill','url(#atm)');
+  svg.append('circle').attr('cx',sz/2).attr('cy',sz/2).attr('r',R-4).attr('fill','url(#sg)');
+  svg.append('circle').attr('cx',sz/2).attr('cy',sz/2).attr('r',R-4).attr('fill','none')
+    .attr('stroke','#00C8FF').attr('stroke-width','1').attr('opacity','0.38');
+  svg.append('circle').attr('cx',sz/2).attr('cy',sz/2).attr('r',R-4).attr('fill','url(#hlt)');
+
+  /* ── Graticule ── */
+  const gEl = svg.append('path').datum(grat)
+    .attr('fill','none').attr('stroke','#1a3055').attr('stroke-width','0.4')
+    .attr('opacity','0.75').attr('d', pFn);
+
+  /* ── Land ── */
+  let landPath = null, landGroup = null;
+
+  const mkLand = (geo) => {
+    if (loadEl) loadEl.remove();
+    landPath = svg.append('path').datum(geo)
+      .attr('fill','#0d2a18').attr('stroke','#00FF88')
+      .attr('stroke-width','0.5').attr('opacity','0.88')
+      .attr('d', pFn);
+  };
+
+  const mkFallback = () => {
+    if (loadEl) loadEl.remove();
+    const fc = {type:'FeatureCollection', features:[
+      {type:'Feature', geometry:{type:'Polygon', coordinates:[[
+        [-168,71],[-145,60],[-130,55],[-125,48],[-120,37],[-117,32],
+        [-105,22],[-100,22],[-95,16],[-90,11],[-83,10],[-80,25],
+        [-75,35],[-70,41],[-65,43],[-59,47],[-65,47],[-77,67],
+        [-95,74],[-140,70],[-168,71]
+      ]]}},
+      {type:'Feature', geometry:{type:'Polygon', coordinates:[[
+        [-78,12],[-65,12],[-50,5],[-34,-4],[-35,-23],[-43,-22],
+        [-44,-29],[-57,-34],[-65,-55],[-72,-51],[-75,-45],
+        [-70,-30],[-66,-18],[-68,-8],[-75,-2],[-78,2],[-78,12]
+      ]]}},
+      {type:'Feature', geometry:{type:'Polygon', coordinates:[[
+        [-10,36],[-5,36],[-5,43],[0,43],[3,46],[8,44],[13,43],
+        [16,41],[20,38],[24,38],[26,41],[28,42],[30,45],[28,50],
+        [26,57],[24,65],[20,68],[15,69],[10,63],[8,58],[4,52],
+        [0,51],[-5,48],[-8,43],[-10,36]
+      ]]}},
+      {type:'Feature', geometry:{type:'Polygon', coordinates:[[
+        [-17,15],[-15,25],[-5,34],[10,37],[20,37],[33,32],[37,23],
+        [42,12],[44,11],[51,12],[43,5],[40,-2],[34,-12],[35,-20],
+        [32,-30],[27,-34],[18,-35],[12,-32],[5,-15],[-1,5],
+        [-8,5],[-15,10],[-17,15]
+      ]]}},
+      {type:'Feature', geometry:{type:'MultiPolygon', coordinates:[[[
+        [27,42],[30,47],[36,50],[52,55],[60,55],[70,55],[85,51],
+        [97,49],[120,48],[130,42],[135,35],[130,32],[122,25],
+        [115,22],[104,10],[100,3],[100,-1],[106,-6],[117,-8],
+        [121,-8],[130,-4],[135,-2],[140,3],[147,6],[148,12],
+        [141,18],[136,22],[120,22],[112,22],[104,22],[98,26],
+        [92,28],[88,27],[80,29],[70,23],[62,22],[58,24],[55,26],
+        [50,30],[46,30],[42,38],[36,35],[29,35],[27,42]
+      ]]]}},
+      {type:'Feature', geometry:{type:'Polygon', coordinates:[[
+        [114,-22],[118,-20],[120,-14],[128,-14],[130,-12],[137,-12],
+        [140,-17],[147,-19],[150,-22],[153,-28],[150,-35],[144,-38],
+        [138,-36],[132,-32],[124,-34],[115,-34],[113,-26],[114,-22]
+      ]]}},
+      {type:'Feature', geometry:{type:'Polygon', coordinates:[[
+        [-65,76],[-52,83],[-18,83],[-18,76],[-30,65],[-48,65],[-60,68],[-65,76]
+      ]]}},
+    ]};
+    landGroup = svg.append('g');
+    fc.features.forEach(f => {
+      landGroup.append('path').datum(f)
+        .attr('fill','#0d2a18').attr('stroke','#00FF88')
+        .attr('stroke-width','0.5').attr('opacity','0.88')
+        .attr('d', pFn);
+    });
+  };
+
+  /* ── Loading indicator ── */
+  let loadEl = svg.append('text')
+    .attr('x', sz/2).attr('y', sz/2 + 4)
+    .attr('text-anchor','middle').attr('fill','#3A5070')
+    .attr('font-family','JetBrains Mono').attr('font-size','11')
+    .text('Loading world map...');
+
+  fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+    .then(r => r.json())
+    .then(w => mkLand(topojson.feature(w, w.objects.land)))
+    .catch(mkFallback);
+
+  /* ── Conflict markers ── */
+  const mkG = svg.append('g').attr('id','mkg');
+  const tip  = document.getElementById('tip');
+  const tipN = document.getElementById('tip-nm');
+  const tipS = document.getElementById('tip-sv');
+
+  ZON.forEach((z, i) => {
+    const c = svCol(z.sv);
+    const r = svR(z.sv);
+    const g = mkG.append('g').attr('class','mk');
+
+    // SVG SMIL pulse rings (two, staggered)
+    for (let j = 0; j < 2; j++) {
+      const ring = document.createElementNS(NS, 'circle');
+      ring.setAttribute('r', r);
+      ring.setAttribute('fill', 'none');
+      ring.setAttribute('stroke', c);
+      ring.setAttribute('stroke-width', j === 0 ? '1.5' : '1');
+
+      const aR = document.createElementNS(NS, 'animate');
+      aR.setAttribute('attributeName','r');
+      aR.setAttribute('from', r);
+      aR.setAttribute('to', r * 5.5);
+      aR.setAttribute('dur', `${1.8 + j * 0.55}s`);
+      aR.setAttribute('begin', `${((i * 0.22) + j * 0.75) % 2}s`);
+      aR.setAttribute('repeatCount','indefinite');
+      ring.appendChild(aR);
+
+      const aO = document.createElementNS(NS, 'animate');
+      aO.setAttribute('attributeName','opacity');
+      aO.setAttribute('from', j === 0 ? '0.85' : '0.55');
+      aO.setAttribute('to','0');
+      aO.setAttribute('dur', `${1.8 + j * 0.55}s`);
+      aO.setAttribute('begin', `${((i * 0.22) + j * 0.75) % 2}s`);
+      aO.setAttribute('repeatCount','indefinite');
+      ring.appendChild(aO);
+
+      g.node().appendChild(ring);
+    }
+
+    // Core dot + highlight
+    g.append('circle').attr('r', r).attr('fill', c).attr('opacity','0.95').attr('filter','url(#gf)');
+    g.append('circle').attr('r', Math.max(1.5, r - 2.5)).attr('fill','#fff').attr('opacity','0.45');
+
+    // Hover tooltip via pointer events on an invisible larger circle
+    const hitEl = g.append('circle').attr('r', Math.max(r + 6, 10))
+      .attr('fill','transparent').attr('style','cursor:pointer');
+
+    hitEl.on('mouseenter', function(evt) {
+      tipN.textContent = z.n;
+      tipS.textContent = z.sv.toUpperCase() + ' — ' + z.tp.toUpperCase();
+      tipS.style.color = c;
+      tip.style.display = 'block';
+    }).on('mousemove', function(evt) {
+      const rect = ar.getBoundingClientRect();
+      tip.style.left = (evt.clientX - rect.left + 12) + 'px';
+      tip.style.top  = (evt.clientY - rect.top  - 38) + 'px';
+    }).on('mouseleave', function() {
+      tip.style.display = 'none';
+    });
+  });
+
+  /* ── Rotation loop ── */
+  let rot = 10;
+  d3.timer(() => {
+    rot += 0.12;
+    proj.rotate([rot, -20]);
+    gEl.attr('d', pFn);
+
+    if (landPath)  landPath.attr('d', pFn);
+    if (landGroup) landGroup.selectAll('path').attr('d', pFn);
+
+    mkG.selectAll('.mk').each(function(_, i) {
+      const z = ZON[i];
+      if (!z) return;
+      const co  = proj([z.lon, z.lat]);
+      const vis = co && isVis(z.lon, z.lat, proj.rotate());
+      d3.select(this)
+        .attr('transform', co ? `translate(${co[0]},${co[1]})` : null)
+        .attr('display', vis ? null : 'none');
+    });
+  });
+}
+
+function isVis(lon, lat, rot) {
+  const d2r = Math.PI / 180;
+  const cl = -rot[0], ct = -rot[1];
+  return (
+    Math.sin(lat * d2r) * Math.sin(ct * d2r) +
+    Math.cos(lat * d2r) * Math.cos(ct * d2r) * Math.cos((lon - cl) * d2r)
+  ) > 0.06;
+}
+
+/* ══════════════════════════════════════════════════════════
+   MARKET SIMULATION
+══════════════════════════════════════════════════════════ */
+function simMarket() {
+  const nudge = (arr, mag) => arr.forEach(d => {
+    const delta = (Math.random() - 0.5) * mag;
+    d.p  = Math.max(0.5, d.p + delta);
+    d.c += delta;
+    d.pc = (d.c / d.p) * 100;
+  });
+  nudge(STK, 0.45);
+  nudge(COM, 0.28);
+  nudge(ETF, 0.18);
+
+  renderRows('dr',  STK, 42);
+  renderRows('cr',  COM, 50);
+  renderRows('etf-rows', ETF, 42);
+  buildTicker();
+}
+
+/* ══════════════════════════════════════════════════════════
+   NAV + CTRL BUTTONS
+══════════════════════════════════════════════════════════ */
+document.querySelectorAll('.nb[data-t]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.nb').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+}));
+
+document.querySelectorAll('#gc .cb').forEach(b => b.addEventListener('click', function() {
+  document.querySelectorAll('#gc .cb').forEach(x => x.classList.remove('on'));
+  this.classList.add('on');
+}));
+
+/* ══════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════ */
+renderRows('dr',  STK, 42);
+renderRows('cr',  COM, 50);
+renderRows('etf-rows', ETF, 42);
+renderIntel();
+buildTicker();
+buildNews();
+updateClock();
+setInterval(updateClock, 1000);
+setInterval(simMarket,   5000);
+
+// Auto-scroll intel feed slowly
+const feed = document.getElementById('is');
+setInterval(() => { feed.scrollTop += 1; if (feed.scrollTop + feed.clientHeight >= feed.scrollHeight) feed.scrollTop = 0; }, 80);
+
+window.addEventListener('load', () => {
+  if (typeof d3 !== 'undefined') initGlobe();
+});
+</script>
+</body>
+</html>
