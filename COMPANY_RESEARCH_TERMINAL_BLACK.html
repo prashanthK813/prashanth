@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuantDesk · Company Research Terminal (Black)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap');
+:root{
+  --bg:#000000;--bg2:#0A0A0A;--bg3:#161616;--bg4:#0D0D0D;
+  --bdr:#2A2A2A;--bdr2:#3D3D3D;--t1:#FFFFFF;--t2:#9A9A9A;--t3:#666666;
+  --acc:#FFFFFF;--accd:rgba(255,255,255,.08);--bdra:rgba(255,255,255,.35);
+  --ok:#2ECC71;--ng:#FF5C5C;--warn:#F0A93A;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
+::-webkit-scrollbar{width:2px;height:2px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:2px}
+
+.topbar{display:flex;align-items:center;height:42px;padding:0 16px;background:var(--bg2);border-bottom:1px solid var(--bdr);flex-shrink:0;gap:0}
+.logo{display:flex;align-items:center;gap:8px;padding-right:18px;border-right:1px solid var(--bdr);margin-right:18px}
+.logo-icon{width:26px;height:26px;border:1.5px solid var(--t1);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--t1)}
+.logo-text{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--t1)}
+.logo-sub{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:1px}
+.ticker-strip{display:flex;align-items:center;gap:20px;flex:1}
+.ts-item{display:flex;flex-direction:column;gap:1px}
+.ts-l{font-size:7px;color:var(--t3);letter-spacing:1px;font-family:'JetBrains Mono',monospace;text-transform:uppercase}
+.ts-v{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--t1)}
+.topbar-right{display:flex;align-items:center;gap:12px;padding-left:16px;border-left:1px solid var(--bdr);margin-left:auto}
+.market-badge{display:flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px}
+.mbdot{width:6px;height:6px;border-radius:50%}
+.mbdot.open{background:var(--ok);box-shadow:0 0 5px var(--ok);animation:glow 2s infinite}
+@keyframes glow{0%,100%{opacity:1}50%{opacity:.4}}
+.mbdot.closed{background:var(--t3)}
+.clk{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t2);letter-spacing:1px}
+.ctrl-btn{background:var(--bg4);border:1px solid var(--bdr2);color:var(--t2);padding:5px 12px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;border-radius:3px;cursor:pointer;transition:all .15s;text-transform:uppercase;position:relative}
+.ctrl-btn:hover{border-color:var(--t1);color:var(--t1)}
+.ctrl-btn.run{background:var(--t1);color:var(--bg);border-color:var(--t1);font-weight:700}
+.ctrl-btn.run:hover{opacity:.8}
+.ctrl-btn.stop{background:var(--ng);color:#fff;border-color:var(--ng);font-weight:700}
+.speed-select{background:var(--bg4);border:1px solid var(--bdr2);color:var(--t1);padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:9px;border-radius:3px;outline:none;cursor:pointer}
+#pluginCount{position:absolute;top:-7px;right:-7px;background:var(--t1);color:var(--bg);font-size:7px;line-height:1;padding:2px 4px;border-radius:8px;font-weight:700}
+
+.body{display:grid;grid-template-columns:200px 1fr 220px 260px;grid-template-rows:1fr;flex:1;overflow:hidden;gap:0}
+.panel{border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden}
+.phead{padding:7px 12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg2)}
+.ptitle{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--t1)}
+.pbadge{font-family:'JetBrains Mono',monospace;font-size:7px;padding:2px 6px;border-radius:2px;letter-spacing:1px;text-transform:uppercase}
+.pbadge.live{background:rgba(15,123,61,.1);color:var(--ok);border:1px solid rgba(15,123,61,.3)}
+.pbadge.idle{background:var(--bg3);color:var(--t3);border:1px solid var(--bdr)}
+
+.left-panel{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.co-list{flex:1;overflow-y:auto}
+.co-row{padding:8px 10px;border-bottom:1px solid var(--bdr);cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.co-row:hover{background:var(--bg3)}
+.co-row.co-active{background:var(--bg3);border-left-color:var(--t1)}
+.co-main{display:flex;justify-content:space-between;align-items:center}
+.co-sym{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--t1)}
+.co-rating{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;letter-spacing:1px}
+.co-sub{display:flex;justify-content:space-between;margin-top:2px}
+.co-px{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t2)}
+.co-chg{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600}
+.co-rm{background:transparent;border:none;color:var(--t3);cursor:pointer;font-size:11px;padding:0 4px}
+.co-rm:hover{color:var(--ng)}
+.left-foot{padding:10px;border-top:1px solid var(--bdr);flex-shrink:0}
+.bp{background:var(--t1);color:var(--bg);border:none;padding:7px 10px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1px;border-radius:3px;cursor:pointer;width:100%;text-transform:uppercase;transition:opacity .2s}
+.bp:hover{opacity:.8}.bp:disabled{opacity:.4;cursor:not-allowed}
+.bs{background:var(--bg4);color:var(--t1);border:1px solid var(--bdr2);padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;border-radius:3px;cursor:pointer;width:100%;text-transform:uppercase;transition:background .2s}
+.bs:hover{background:var(--bg3)}
+input,select{background:var(--bg4);border:1px solid var(--bdr2);color:var(--t1);padding:5px 8px;font-family:'JetBrains Mono',monospace;font-size:11px;border-radius:3px;outline:none;width:100%;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--t1)}
+.cg{display:flex;flex-direction:column;gap:4px}
+.cl{font-size:8px;color:var(--t2);letter-spacing:1px;text-transform:uppercase}
+
+.center-panel{display:flex;flex-direction:column;overflow:hidden;grid-column:2}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--bdr);flex-shrink:0}
+.tabs{display:flex;gap:4px}
+.tab{font-size:8px;font-family:'JetBrains Mono',monospace;color:var(--t2);padding:4px 9px;border:1px solid var(--bdr);border-radius:3px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all .15s}
+.tab.active{color:var(--t1);border-color:var(--bdra);background:var(--accd);font-weight:700}
+.cb{flex:1;padding:10px;position:relative;min-height:0}
+canvas{display:block;width:100%!important;height:100%!important}
+.chart-foot{display:flex;align-items:center;gap:12px;padding:5px 12px;border-top:1px solid var(--bdr);flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3)}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.stat{background:var(--bg3);border:1px solid var(--bdr);border-radius:3px;padding:7px 8px}
+.stat-l{font-size:7px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;font-family:'JetBrains Mono',monospace}
+.stat-v{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--t1)}
+.v-ok{color:var(--ok)}.v-ng{color:var(--ng)}.v-warn{color:var(--warn)}
+.comp-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:10px}
+.comp-table th{text-align:left;padding:7px 8px;border-bottom:1px solid var(--bdr2);color:var(--t3);font-size:8px;letter-spacing:1px;text-transform:uppercase;font-weight:600}
+.comp-table td{padding:7px 8px;border-bottom:1px solid var(--bdr)}
+.comp-table tr:hover{background:var(--bg3)}
+
+.alloc-panel{display:flex;flex-direction:column;overflow:hidden}
+.event-feed{flex:1;overflow-y:auto;padding:8px 10px}
+.log-row{display:grid;grid-template-columns:32px 1fr;gap:6px;font-family:'JetBrains Mono',monospace;font-size:8px;padding:4px 6px;border-left:2px solid var(--bdr2);background:var(--bg3);border-radius:0 3px 3px 0;margin-bottom:3px}
+.log-time{color:var(--t3)}
+.log-msg{color:var(--t2)}
+
+.ai-area{display:flex;flex-direction:column;overflow:hidden}
+.ai-chat{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:7px}
+.ai-msg{padding:8px 10px;border-radius:3px;font-size:10px;line-height:1.7}
+.ai-msg.ai{background:var(--bg3);border:1px solid var(--bdr);color:var(--t2);white-space:pre-wrap}
+.ai-msg.ai .al{font-size:7px;color:var(--t1);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:4px;font-weight:700}
+.ai-input-row{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--bdr);flex-shrink:0}
+.ai-input-row input{flex:1;font-size:10px;padding:5px 8px}
+.ai-send{background:var(--t1);color:var(--bg);border:none;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;border-radius:3px;cursor:pointer;letter-spacing:1px;flex-shrink:0}
+.qp-btn{background:var(--bg4);border:1px solid var(--bdr);color:var(--t2);padding:4px 7px;font-family:'JetBrains Mono',monospace;font-size:8px;border-radius:3px;cursor:pointer;text-align:left;transition:all .15s;width:100%;margin-bottom:3px;letter-spacing:.5px}
+.qp-btn:hover{border-color:var(--bdra);color:var(--t1);background:var(--accd)}
+
+.statusbar{display:flex;align-items:center;gap:16px;padding:4px 16px;background:var(--bg2);border-top:1px solid var(--bdr);font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3);flex-shrink:0}
+.sb-sep{color:var(--bdr2)}
+
+.plugins-backdrop{position:fixed;inset:42px 0 0 0;background:rgba(0,0,0,.7);z-index:65;opacity:0;pointer-events:none;transition:opacity .2s}
+.plugins-backdrop.show{opacity:1;pointer-events:auto}
+.plugins-drawer{position:fixed;top:42px;right:0;bottom:0;width:380px;background:var(--bg);border-left:1px solid var(--bdr2);z-index:70;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;box-shadow:-10px 0 28px rgba(0,0,0,.6)}
+.plugins-drawer.open{transform:translateX(0)}
+.drawer-header{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--bdr);flex-shrink:0;background:var(--bg2)}
+.drawer-close{background:var(--bg4);border:1px solid var(--bdr2);color:var(--t2);width:22px;height:22px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1}
+.drawer-close:hover{color:var(--ng);border-color:var(--ng)}
+.drawer-body{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+.drawer-sub{font-size:9px;color:var(--t3);line-height:1.6;margin-bottom:2px}
+.pcard{border:1px solid var(--bdr);border-radius:4px;padding:10px;background:var(--bg2);transition:border-color .2s}
+.pcard.active{border-color:var(--t1)}
+.pcard-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.pcard-name{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--t1)}
+.pcard-desc{font-size:9px;color:var(--t2);margin-top:3px;line-height:1.5}
+.pcard-params{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.pcard-params input,.pcard-params select{font-size:10px;padding:4px 6px}
+.pcard-status{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3);margin-top:7px;padding-top:6px;border-top:1px solid var(--bdr)}
+.pcard-btn{width:100%;margin-top:7px;background:var(--accd);border:1px solid var(--bdra);color:var(--t1);padding:5px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:9px;cursor:pointer;letter-spacing:1px;text-transform:uppercase}
+.pcard-btn:hover{background:rgba(255,255,255,.18)}
+.tgl{width:32px;height:18px;border-radius:9px;background:var(--bdr2);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;margin-top:1px}
+.tgl::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:all .2s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.tgl.on{background:var(--t1)}
+.tgl.on::after{left:16px}
+.activity-log{display:flex;flex-direction:column;gap:3px;max-height:170px;overflow-y:auto}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-icon">▦</div>
+    <div><div class="logo-text">COMPANY RESEARCH</div><div class="logo-sub">QUANTDESK EQUITY TERMINAL</div></div>
+  </div>
+  <div class="ticker-strip">
+    <div class="ts-item"><div class="ts-l">Tracked</div><div class="ts-v" id="tb-tracked">3</div></div>
+    <div class="ts-item"><div class="ts-l">Day</div><div class="ts-v" id="tb-day">0</div></div>
+    <div class="ts-item"><div class="ts-l">Alerts</div><div class="ts-v" id="tb-alerts">0</div></div>
+    <div class="ts-item"><div class="ts-l">Active</div><div class="ts-v" id="tb-active">AAPL</div></div>
+  </div>
+  <div class="topbar-right">
+    <div class="market-badge">
+      <div class="mbdot closed" id="mktDot"></div>
+      <span style="color:var(--t2)" id="mktStatus">IDLE</span>
+    </div>
+    <select class="speed-select" id="speedSel" onchange="setSpeed(this.value)">
+      <option value="400">1× SPEED</option>
+      <option value="180" selected>2× SPEED</option>
+      <option value="70">5× SPEED</option>
+      <option value="25">15× SPEED</option>
+    </select>
+    <button class="ctrl-btn run" id="mainBtn" onclick="toggleSim()">▶ START</button>
+    <button class="ctrl-btn" onclick="resetSim()">↺ RESET</button>
+    <button class="ctrl-btn" id="pluginsBtn" onclick="openDrawer()">⚙ PLUGINS<span id="pluginCount">0</span></button>
+    <div class="clk" id="clk">--:--:--</div>
+  </div>
+</div>
+
+<div class="body">
+
+<div class="panel left-panel">
+  <div class="phead">
+    <div class="ptitle">Tracked Companies</div>
+    <div class="pbadge idle" id="simBadge">IDLE</div>
+  </div>
+  <div class="co-list" id="companyList"></div>
+  <div class="left-foot">
+    <button class="bp" onclick="openDrawer()">+ ADD COMPANY</button>
+  </div>
+</div>
+
+<div class="center-panel">
+  <div class="ch">
+    <div class="tabs" id="chartTabs">
+      <div class="tab active" onclick="setTab('overview',this)">Overview</div>
+      <div class="tab" onclick="setTab('comparison',this)">Comparison</div>
+      <div class="tab" onclick="setTab('thesis',this)">AI Thesis</div>
+    </div>
+    <div style="text-align:right">
+      <span id="chartHdrSym" style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px">AAPL</span>
+      <span id="ov-chg" style="font-family:'JetBrains Mono',monospace;font-size:10px;margin-left:6px">+0.00%</span>
+    </div>
+  </div>
+
+  <div id="overviewPane" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div class="cb"><canvas id="mainChart"></canvas></div>
+    <div style="padding:10px;border-top:1px solid var(--bdr)">
+      <div id="ov-name" style="font-size:9px;color:var(--t2);margin-bottom:6px">Apple Inc. · Technology</div>
+      <div class="stat-grid">
+        <div class="stat"><div class="stat-l">Price</div><div class="stat-v" id="ov-price">$185.40</div></div>
+        <div class="stat"><div class="stat-l">P/E</div><div class="stat-v" id="ov-pe">-</div></div>
+        <div class="stat"><div class="stat-l">Mkt Cap</div><div class="stat-v" id="ov-mktcap">-</div></div>
+        <div class="stat"><div class="stat-l">Rev Growth</div><div class="stat-v" id="ov-revgrow">-</div></div>
+        <div class="stat"><div class="stat-l">Net Margin</div><div class="stat-v" id="ov-margin">-</div></div>
+        <div class="stat"><div class="stat-l">Rating</div><div class="stat-v" id="ov-rating">-</div></div>
+        <div class="stat"><div class="stat-l">Sentiment</div><div class="stat-v" id="ov-sentiment">-</div></div>
+        <div class="stat"><div class="stat-l">Next Earnings</div><div class="stat-v" id="ov-earnings">-</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="comparisonPane" style="display:none;flex:1;overflow-y:auto;padding:12px"></div>
+
+  <div id="thesisPane" style="display:none;flex-direction:column;gap:12px;flex:1;overflow-y:auto;padding:14px">
+    <div id="thesisContent" style="font-size:11px;line-height:1.8;color:var(--t1);white-space:pre-wrap"></div>
+    <button class="bp" id="thesisGenBtn" onclick="generateThesis(ACTIVE)" style="width:auto;align-self:flex-start;padding:8px 16px">⬡ GENERATE / REFRESH AI THESIS</button>
+  </div>
+
+  <div class="chart-foot">
+    <span>●</span><span>Price history (simulated)</span>
+    <span style="margin-left:auto">MODEL: GBM PRICE SIM · FUNDAMENTALS-DERIVED P/E · AI: CLAUDE SONNET</span>
+  </div>
+</div>
+
+<div class="panel alloc-panel">
+  <div class="phead">
+    <div class="ptitle">Research Alerts</div>
+  </div>
+  <div class="event-feed" id="eventFeed"></div>
+</div>
+
+<div class="panel ai-area" style="border-right:none">
+  <div class="phead">
+    <div class="ptitle">AI Research Assistant</div>
+    <div class="pbadge live">POWERED</div>
+  </div>
+  <div style="padding:8px 10px;border-bottom:1px solid var(--bdr);flex-shrink:0;display:flex;flex-direction:column;gap:3px">
+    <button class="qp-btn" onclick="aiQ('Generate a full investment thesis for {ACTIVE} including bull case, bear case, and a fair value estimate.')">📊 Full Investment Thesis</button>
+    <button class="qp-btn" onclick="aiQ('Compare {ACTIVE}\'s valuation, growth, and margins against the other companies I\'m tracking. Which looks most attractive right now?')">⚖ Compare vs Watchlist</button>
+    <button class="qp-btn" onclick="aiQ('What is the single biggest risk to {ACTIVE}\'s thesis given its current sentiment score and analyst rating?')">⚠️ Biggest Risk Check</button>
+    <button class="qp-btn" onclick="aiQ('Based on everything I am tracking, which company would you prioritize for deeper due diligence and why?')">🔎 Prioritize Due Diligence</button>
+  </div>
+  <div class="ai-chat" id="aiChat">
+    <div class="ai-msg ai"><div class="al">⬡ RESEARCH AI</div>I'm tracking your company watchlist in real time. Add companies, press START, and I'll monitor price, sentiment, ratings, and earnings as the simulation runs. Use the quick prompts above or ask me anything about the names you're researching.</div>
+  </div>
+  <div class="ai-input-row">
+    <input id="aiInp" placeholder="Ask about valuation, risk, thesis..." onkeydown="if(event.key==='Enter')aiSend()">
+    <button class="ai-send" onclick="aiSend()">SEND</button>
+  </div>
+</div>
+
+</div>
+
+<div class="statusbar">
+  <span style="color:var(--t3)">DATA</span><span style="color:var(--t2)">SIMULATED — GBM PRICE PATHS, FUNDAMENTALS-DERIVED VALUATION</span>
+  <span class="sb-sep">|</span>
+  <span style="color:var(--t3)">RESEARCH</span><span style="color:var(--t2)">AUTOMATED VIA PLUGIN ENGINE</span>
+  <span class="sb-sep">|</span>
+  <span style="color:var(--t3)">UNIVERSE</span><span style="color:var(--t2)" id="sb-tracked">3 companies</span>
+  <span style="margin-left:auto;color:var(--t3)">AI</span><span style="color:var(--t1);font-weight:700">CLAUDE SONNET</span>
+  <span class="sb-sep">|</span>
+  <span style="color:var(--ng)">⚠ SIMULATION ONLY — NOT FINANCIAL ADVICE</span>
+</div>
+
+<div class="plugins-backdrop" id="pluginsBackdrop" onclick="closeDrawer()"></div>
+<div class="plugins-drawer" id="pluginsDrawer">
+  <div class="drawer-header">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--t1)">⚙ AUTOMATION PLUGINS</div>
+    <button class="drawer-close" onclick="closeDrawer()">×</button>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-sub">9 autonomous research modules running inside the live simulation loop. Enable any combination — each acts independently once toggled on.</div>
+
+    <div class="pcard active" id="pc-multiCompany">
+      <div class="pcard-head">
+        <div><div class="pcard-name">🏢 Multi-Company Manager</div><div class="pcard-desc">Add any company to the tracked watchlist with starting fundamentals — it appears instantly in the left panel.</div></div>
+        <div class="tgl on" onclick="togglePlugin('multiCompany',this)"></div>
+      </div>
+      <div class="pcard-params">
+        <div class="cg"><div class="cl">Ticker</div><input id="newCoSym" placeholder="TSM" style="text-transform:uppercase"></div>
+        <div class="cg"><div class="cl">Start Price ($)</div><input id="newCoPrice" type="number" value="100" step="0.01"></div>
+        <div class="cg" style="grid-column:1/3"><div class="cl">Company Name</div><input id="newCoName" placeholder="Taiwan Semiconductor"></div>
+        <div class="cg"><div class="cl">Sector</div>
+          <select id="newCoSector"><option>Technology</option><option>Healthcare</option><option>Financials</option><option>Energy</option><option>Consumer</option><option>Industrials</option><option>Other</option></select>
+        </div>
+        <div class="cg"><div class="cl">P/E Ratio</div><input id="newCoPE" type="number" value="22" step="0.1"></div>
+        <div class="cg"><div class="cl">Mkt Cap ($B)</div><input id="newCoMktCap" type="number" value="50" step="1"></div>
+        <div class="cg"><div class="cl">Rev Growth (%)</div><input id="newCoRevGrowth" type="number" value="10" step="0.1"></div>
+        <div class="cg" style="grid-column:1/3"><div class="cl">Net Margin (%)</div><input id="newCoMargin" type="number" value="15" step="0.1"></div>
+      </div>
+      <button class="pcard-btn" onclick="addCompany()">+ ADD TO WATCHLIST</button>
+      <div class="pcard-status" id="pst-multi">3 companies tracked</div>
+    </div>
+
+    <div class="pcard" id="pc-autoProfiler">
+      <div class="pcard-head">
+        <div><div class="pcard-name">🤖 Auto Company Profiler</div><div class="pcard-desc">When a new company is added, Claude automatically writes a full investment thesis — no manual prompting needed.</div></div>
+        <div class="tgl" onclick="togglePlugin('autoProfiler',this)"></div>
+      </div>
+      <div class="pcard-status" id="pst-profiler">Idle — theses generated manually</div>
+    </div>
+
+    <div class="pcard" id="pc-sentimentScanner">
+      <div class="pcard-head">
+        <div><div class="pcard-name">📰 News &amp; Sentiment Scanner</div><div class="pcard-desc">Periodically updates each company's sentiment score and flags significant news-driven swings.</div></div>
+        <div class="tgl" onclick="togglePlugin('sentimentScanner',this)"></div>
+      </div>
+      <div class="pcard-params" style="grid-template-columns:1fr">
+        <div class="cg"><div class="cl">Check Every (days)</div><input type="number" value="7" onchange="PLUGINS.sentimentScanner.checkEvery=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-sentiment">Idle — not monitoring</div>
+    </div>
+
+    <div class="pcard" id="pc-earningsWatcher">
+      <div class="pcard-head">
+        <div><div class="pcard-name">📅 Earnings Calendar Watcher</div><div class="pcard-desc">Tracks days to next earnings per company and simulates a price reaction when the date hits.</div></div>
+        <div class="tgl" onclick="togglePlugin('earningsWatcher',this)"></div>
+      </div>
+      <div class="pcard-params" style="grid-template-columns:1fr">
+        <div class="cg"><div class="cl">Avg Reaction Vol (%)</div><input type="number" value="4" step="0.5" onchange="PLUGINS.earningsWatcher.reactionVol=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-earnings">Idle — not monitoring</div>
+    </div>
+
+    <div class="pcard" id="pc-ratingMonitor">
+      <div class="pcard-head">
+        <div><div class="pcard-name">⭐ Analyst Rating Monitor</div><div class="pcard-desc">Reads 10-day price momentum per company and probabilistically upgrades or downgrades BUY/HOLD/SELL.</div></div>
+        <div class="tgl" onclick="togglePlugin('ratingMonitor',this)"></div>
+      </div>
+      <div class="pcard-params">
+        <div class="cg"><div class="cl">Check Every (days)</div><input type="number" value="10" onchange="PLUGINS.ratingMonitor.checkEvery=+this.value"></div>
+        <div class="cg"><div class="cl">Momentum Trigger (%)</div><input type="number" value="6" onchange="PLUGINS.ratingMonitor.momThreshold=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-rating">Idle — not monitoring</div>
+    </div>
+
+    <div class="pcard" id="pc-peerComparison">
+      <div class="pcard-head">
+        <div><div class="pcard-name">📊 Peer Comparison Engine</div><div class="pcard-desc">Computes average P/E across the watchlist and flags names trading well above or below peers.</div></div>
+        <div class="tgl" onclick="togglePlugin('peerComparison',this)"></div>
+      </div>
+      <div class="pcard-params">
+        <div class="cg"><div class="cl">Check Every (days)</div><input type="number" value="14" onchange="PLUGINS.peerComparison.checkEvery=+this.value"></div>
+        <div class="cg"><div class="cl">Flag Threshold (%)</div><input type="number" value="25" onchange="PLUGINS.peerComparison.flagThreshold=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-peer">Idle — not monitoring</div>
+    </div>
+
+    <div class="pcard" id="pc-valuationAlert">
+      <div class="pcard-head">
+        <div><div class="pcard-name">🎯 Valuation Alert</div><div class="pcard-desc">Fires when a company's P/E drifts beyond your threshold from the level it had when you added it.</div></div>
+        <div class="tgl" onclick="togglePlugin('valuationAlert',this)"></div>
+      </div>
+      <div class="pcard-params" style="grid-template-columns:1fr">
+        <div class="cg"><div class="cl">P/E Drift Threshold (%)</div><input type="number" value="20" onchange="PLUGINS.valuationAlert.threshold=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-valuation">Idle — not monitoring</div>
+    </div>
+
+    <div class="pcard" id="pc-aiPulse">
+      <div class="pcard-head">
+        <div><div class="pcard-name">⬡ AI Co-Pilot Pulse</div><div class="pcard-desc">Claude auto-narrates the whole watchlist every N days — no prompting needed, posts straight into the chat.</div></div>
+        <div class="tgl" onclick="togglePlugin('aiPulse',this)"></div>
+      </div>
+      <div class="pcard-params" style="grid-template-columns:1fr">
+        <div class="cg"><div class="cl">Pulse Every (days)</div><input type="number" value="25" onchange="PLUGINS.aiPulse.interval=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-pulse">Idle — not pulsing</div>
+    </div>
+
+    <div class="pcard active" id="pc-journal">
+      <div class="pcard-head">
+        <div><div class="pcard-name">📓 Research Journal</div><div class="pcard-desc">Silently logs every alert and automation event in the background. Export the full session anytime as CSV.</div></div>
+        <div class="tgl on" onclick="togglePlugin('journal',this)"></div>
+      </div>
+      <div class="pcard-status" id="pst-journal">0 events logged</div>
+      <button class="pcard-btn" onclick="exportJournal()">⬇ Export CSV</button>
+    </div>
+
+    <div class="drawer-sub" style="margin-top:2px;border-top:1px solid var(--bdr);padding-top:9px">Automation Activity Log</div>
+    <div class="activity-log" id="activityLog"></div>
+  </div>
+</div>
+
+<script>
+const el=id=>document.getElementById(id);
+const nr=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+
+function dc(cid,fn){const c=el(cid);if(!c)return;const ctx=c.getContext('2d');const r=c.parentElement.getBoundingClientRect();c.width=r.width-20;c.height=r.height-20;ctx.clearRect(0,0,c.width,c.height);fn(ctx,c.width,c.height)}
+function dg(ctx,W,H,mn,mx,fmt=v=>'$'+v.toFixed(0)){for(let i=0;i<=4;i++){const y=H*i/4;ctx.strokeStyle='#262626';ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();ctx.fillStyle='#888888';ctx.font='8px JetBrains Mono';ctx.fillText(fmt(mx-(mx-mn)*i/4),3,y-2)}}
+function dl(ctx,d,W,H,mn,mx,col,lw=1.5){const n=d.length;if(n<2)return;const px=i=>(i/(n-1))*W;const py=v=>H-(v-mn)/(mx-mn)*(H-4)-2;ctx.beginPath();d.forEach((v,i)=>{i===0?ctx.moveTo(px(i),py(v)):ctx.lineTo(px(i),py(v))});ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.stroke()}
+function fa(ctx,d,W,H,mn,mx,col){const n=d.length;if(n<2)return;const px=i=>(i/(n-1))*W;const py=v=>H-(v-mn)/(mx-mn)*(H-4)-2;const gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,col+'26');gr.addColorStop(1,col+'00');ctx.beginPath();d.forEach((v,i)=>{i===0?ctx.moveTo(px(i),py(v)):ctx.lineTo(px(i),py(v))});ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fillStyle=gr;ctx.fill()}
+
+setInterval(()=>{el('clk').textContent=new Date().toLocaleTimeString('en-US',{hour12:false})},1000);
+
+const SECTOR_VOL={Technology:32,Healthcare:24,Financials:22,Energy:30,Consumer:20,Industrials:22,Other:25};
+function mkCompany(sym,name,sector,price,pe,mktCapB,revGrowth,netMargin){
+  return{sym,name,sector,price,basePrice:price,eps:price/pe,basePE:pe,mktCapB,revGrowth,netMargin,rating:'HOLD',sentiment:50,daysToEarnings:10+Math.floor(Math.random()*80),thesis:null,thesisDay:null,alertFired:false,expRet:6+revGrowth*0.4,expVol:SECTOR_VOL[sector]||25,priceHist:[price]};
+}
+let COMPANIES=[
+  mkCompany('AAPL','Apple Inc.','Technology',185.40,28.5,2850,8.5,25.3),
+  mkCompany('MSFT','Microsoft Corp.','Technology',420.30,35.2,3120,14.2,36.1),
+  mkCompany('NVDA','NVIDIA Corp.','Technology',875.50,65.8,2150,122.0,55.1),
+];
+let ACTIVE='AAPL';
+let activeTab='overview';
+
+let SIM={running:false,timer:null,speed:180,day:0,aiHistory:[]};
+
+let PLUGINS={
+  multiCompany:{enabled:true},
+  autoProfiler:{enabled:false},
+  sentimentScanner:{enabled:false,checkEvery:7,lastCheck:0},
+  earningsWatcher:{enabled:false,reactionVol:4},
+  ratingMonitor:{enabled:false,checkEvery:10,momThreshold:6,lastCheck:0},
+  peerComparison:{enabled:false,checkEvery:14,flagThreshold:25,lastCheck:0},
+  valuationAlert:{enabled:false,threshold:20},
+  aiPulse:{enabled:false,interval:25,lastPulse:0},
+  journal:{enabled:true,log:[]},
+};
+const PLUGIN_NAMES={multiCompany:'Multi-Company Manager',autoProfiler:'Auto Profiler',sentimentScanner:'Sentiment Scanner',earningsWatcher:'Earnings Watcher',ratingMonitor:'Rating Monitor',peerComparison:'Peer Comparison',valuationAlert:'Valuation Alert',aiPulse:'AI Pulse',journal:'Research Journal'};
+
+function plog(name,msg,color){
+  color=color||'var(--t2)';
+  PLUGINS.journal.log.push({day:SIM.day,name,msg});
+  const log=el('activityLog');if(log){
+    const row=document.createElement('div');row.className='log-row';row.style.borderLeftColor=color;
+    row.innerHTML=`<span class="log-time">D${SIM.day}</span><span class="log-msg" style="color:${color}">${name}: ${msg}</span>`;
+    log.insertBefore(row,log.firstChild);
+    while(log.children.length>60)log.removeChild(log.lastChild);
+  }
+}
+function togglePlugin(key,toggleEl){
+  PLUGINS[key].enabled=!PLUGINS[key].enabled;
+  toggleEl.classList.toggle('on',PLUGINS[key].enabled);
+  el('pc-'+key)?.classList.toggle('active',PLUGINS[key].enabled);
+  updatePluginCount();
+  plog(PLUGIN_NAMES[key],PLUGINS[key].enabled?'Activated — now running automatically':'Deactivated','var(--ok)');
+}
+function updatePluginCount(){const n=Object.values(PLUGINS).filter(p=>p.enabled).length;const b=el('pluginCount');if(b)b.textContent=n}
+function openDrawer(){el('pluginsDrawer').classList.add('open');el('pluginsBackdrop').classList.add('show')}
+function closeDrawer(){el('pluginsDrawer').classList.remove('open');el('pluginsBackdrop').classList.remove('show')}
+
+function exportJournal(){
+  if(!PLUGINS.journal.log.length){alert('No events logged yet — run the simulation first.');return}
+  const headers='day,plugin,event\n';
+  const rows=PLUGINS.journal.log.map(r=>`${r.day},"${r.name}","${r.msg}"`).join('\n');
+  const blob=new Blob([headers+rows],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='company_research_journal_'+Date.now()+'.csv';document.body.appendChild(a);a.click();a.remove();
+  URL.revokeObjectURL(url);
+  plog('Research Journal','Exported '+PLUGINS.journal.log.length+' events to CSV','var(--ok)');
+}
+
+function livePE(c){return c.price/c.eps}
+function liveMktCap(c){return c.mktCapB*(c.price/c.basePrice)}
+function pctChg(c){return(c.price/c.basePrice-1)*100}
+
+function addCompany(){
+  if(!PLUGINS.multiCompany.enabled){alert('Enable the Multi-Company Manager toggle to add companies.');return}
+  const sym=el('newCoSym').value.trim().toUpperCase();
+  const name=el('newCoName').value.trim()||sym;
+  const sector=el('newCoSector').value;
+  const price=parseFloat(el('newCoPrice').value)||100;
+  const pe=parseFloat(el('newCoPE').value)||20;
+  const mktCap=parseFloat(el('newCoMktCap').value)||50;
+  const revGrowth=parseFloat(el('newCoRevGrowth').value)||10;
+  const netMargin=parseFloat(el('newCoMargin').value)||15;
+  if(!sym){alert('Enter a ticker symbol.');return}
+  if(COMPANIES.find(c=>c.sym===sym)){alert(sym+' is already tracked.');return}
+  const co=mkCompany(sym,name,sector,price,pe,mktCap,revGrowth,netMargin);
+  COMPANIES.push(co);ACTIVE=sym;
+  renderCompanyList();selectCompany(sym);
+  plog('Multi-Company Manager','Added '+sym+' ('+name+') to watchlist','var(--ok)');
+  if(PLUGINS.autoProfiler.enabled)generateThesis(sym);
+  el('newCoSym').value='';el('newCoName').value='';
+}
+function removeCompanyBySym(sym){
+  if(COMPANIES.length<=1){alert('Keep at least 1 company tracked.');return}
+  COMPANIES=COMPANIES.filter(c=>c.sym!==sym);
+  if(ACTIVE===sym)ACTIVE=COMPANIES[0]?COMPANIES[0].sym:null;
+  renderCompanyList();
+  if(ACTIVE)selectCompany(ACTIVE);
+  plog('Multi-Company Manager','Removed '+sym+' from watchlist','var(--t2)');
+}
+function selectCompany(sym){
+  ACTIVE=sym;
+  renderCompanyList();
+  el('chartHdrSym').textContent=sym;
+  el('tb-active').textContent=sym;
+  if(activeTab==='overview'){renderOverviewStats();drawPriceChart()}
+  else if(activeTab==='comparison'){renderComparisonTable()}
+  else{renderThesisPane()}
+}
+
+async function generateThesis(sym){
+  const c=COMPANIES.find(x=>x.sym===sym);if(!c)return;
+  const btn=el('thesisGenBtn');if(btn){btn.disabled=true;btn.textContent='⬡ GENERATING...'}
+  if(ACTIVE===sym)el('thesisContent').textContent='';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:500,messages:[{role:'user',content:`Senior equity research analyst. Write a concise investment thesis (4-5 sentences) for ${c.sym} (${c.name}), sector: ${c.sector}. Current data: Price $${c.price.toFixed(2)}, P/E ${livePE(c).toFixed(1)}x, Market Cap $${liveMktCap(c).toFixed(1)}B, Revenue Growth ${c.revGrowth}%, Net Margin ${c.netMargin}%, Analyst Rating ${c.rating}, Sentiment Score ${c.sentiment.toFixed(0)}/100. Cover business quality, valuation view, key catalyst, and primary risk. Be specific and data-driven.`}]})});
+    const d=await res.json();const txt=d.content[0]?.text||'Thesis unavailable.';
+    c.thesis=txt;c.thesisDay=SIM.day;
+    if(ACTIVE===sym)renderThesisPane();
+    plog('Auto Profiler','Generated investment thesis for '+sym,'var(--ok)');
+  }catch(err){if(ACTIVE===sym)el('thesisContent').textContent='Connection error generating thesis.'}
+  if(btn){btn.disabled=false;btn.textContent='⬡ GENERATE / REFRESH AI THESIS'}
+}
+
+function runPlugins(){
+  if(PLUGINS.sentimentScanner.enabled&&SIM.day-PLUGINS.sentimentScanner.lastCheck>=PLUGINS.sentimentScanner.checkEvery){
+    PLUGINS.sentimentScanner.lastCheck=SIM.day;
+    COMPANIES.forEach(c=>{
+      const before=c.sentiment;
+      const shock=Math.random()<0.15?(Math.random()-0.5)*40:(Math.random()-0.5)*8;
+      c.sentiment=Math.max(0,Math.min(100,c.sentiment+shock));
+      if(Math.abs(c.sentiment-before)>15){
+        plog('Sentiment Scanner',c.sym+' sentiment '+(c.sentiment>before?'jumped':'dropped')+' to '+c.sentiment.toFixed(0)+' (news event)',c.sentiment>before?'var(--ok)':'var(--ng)');
+      }
+    });
+    el('pst-sentiment').textContent='Last scan: day '+SIM.day;
+  }
+
+  if(PLUGINS.earningsWatcher.enabled){
+    COMPANIES.forEach(c=>{
+      if(c.daysToEarnings<=0){
+        const shock=nr()*(PLUGINS.earningsWatcher.reactionVol/100);
+        c.price=Math.max(0.5,+(c.price*(1+shock)).toFixed(2));
+        plog('Earnings Watcher',c.sym+' reported — price reaction '+(shock>=0?'+':'')+(shock*100).toFixed(1)+'%',shock>=0?'var(--ok)':'var(--ng)');
+        c.daysToEarnings=60+Math.floor(Math.random()*30);
+      }
+    });
+    el('pst-earnings').textContent='Monitoring '+COMPANIES.length+' calendars';
+  }
+
+  if(PLUGINS.ratingMonitor.enabled&&SIM.day-PLUGINS.ratingMonitor.lastCheck>=PLUGINS.ratingMonitor.checkEvery){
+    PLUGINS.ratingMonitor.lastCheck=SIM.day;
+    const order=['SELL','HOLD','BUY'];
+    COMPANIES.forEach(c=>{
+      if(c.priceHist.length<10)return;
+      const mom=(c.price/c.priceHist[Math.max(0,c.priceHist.length-10)]-1)*100;
+      let idx=order.indexOf(c.rating);const th=PLUGINS.ratingMonitor.momThreshold;
+      if(mom>th&&Math.random()>0.55&&idx<2)idx++;
+      else if(mom<-th&&Math.random()>0.55&&idx>0)idx--;
+      const newRating=order[idx];
+      if(newRating!==c.rating){
+        plog('Rating Monitor',c.sym+' '+c.rating+' -> '+newRating+' (10d momentum '+(mom>=0?'+':'')+mom.toFixed(1)+'%)',newRating==='BUY'?'var(--ok)':newRating==='SELL'?'var(--ng)':'var(--t2)');
+        c.rating=newRating;
+      }
+    });
+    el('pst-rating').textContent='Last check: day '+SIM.day;
+  }
+
+  if(PLUGINS.peerComparison.enabled&&SIM.day-PLUGINS.peerComparison.lastCheck>=PLUGINS.peerComparison.checkEvery&&COMPANIES.length>1){
+    PLUGINS.peerComparison.lastCheck=SIM.day;
+    const avgPE=COMPANIES.reduce((s,c)=>s+livePE(c),0)/COMPANIES.length;
+    COMPANIES.forEach(c=>{
+      const pe=livePE(c);const dev=(pe/avgPE-1)*100;
+      if(Math.abs(dev)>PLUGINS.peerComparison.flagThreshold){
+        plog('Peer Comparison',c.sym+' trading '+(dev>0?'+':'')+dev.toFixed(0)+'% vs peer avg P/E',dev>0?'var(--ng)':'var(--ok)');
+      }
+    });
+    el('pst-peer').textContent='Peer avg P/E: '+avgPE.toFixed(1)+'x';
+  }
+
+  if(PLUGINS.valuationAlert.enabled){
+    let flagged=0;
+    COMPANIES.forEach(c=>{
+      const pe=livePE(c);const chgFromBase=(pe/c.basePE-1)*100;
+      if(Math.abs(chgFromBase)>=PLUGINS.valuationAlert.threshold&&!c.alertFired){
+        plog('Valuation Alert',c.sym+' P/E moved '+(chgFromBase>0?'+':'')+chgFromBase.toFixed(0)+'% from entry — '+(chgFromBase>0?'getting expensive':'getting cheap'),'var(--warn)');
+        c.alertFired=true;flagged++;
+      }else if(Math.abs(chgFromBase)<PLUGINS.valuationAlert.threshold*0.5){
+        c.alertFired=false;
+      }
+    });
+    el('pst-valuation').textContent='Monitoring — '+flagged+' new flags this tick';
+  }
+
+  if(PLUGINS.aiPulse.enabled&&SIM.day-PLUGINS.aiPulse.lastPulse>=PLUGINS.aiPulse.interval&&SIM.day>3&&COMPANIES.length){
+    PLUGINS.aiPulse.lastPulse=SIM.day;el('pst-pulse').textContent='Last pulse: day '+SIM.day;
+    fireAIPulse();
+  }
+
+  el('pst-journal').textContent=PLUGINS.journal.log.length+' events logged';
+  el('pst-multi').textContent=COMPANIES.length+' companies tracked';
+}
+
+async function fireAIPulse(){
+  const chat=el('aiChat');
+  const am=document.createElement('div');am.className='ai-msg ai';
+  am.innerHTML='<div class="al">⬡ AUTO-PULSE</div><div class="ac"></div>';
+  chat.appendChild(am);chat.scrollTop=chat.scrollHeight;
+  const summary=COMPANIES.map(c=>`${c.sym}:${c.rating}/sent${c.sentiment.toFixed(0)}`).join(', ');
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:80,messages:[{role:'user',content:`Equity research co-pilot pulse. Day ${SIM.day}. Tracked companies: ${summary}. ONE short sharp sentence (under 18 words) flagging the most notable thing across the watchlist right now. No preamble.`}]})});
+    const d=await res.json();const txt=d.content[0]?.text||'';
+    am.querySelector('.ac').textContent=txt;chat.scrollTop=chat.scrollHeight;
+  }catch(err){am.remove()}
+}
+
+function renderCompanyList(){
+  el('companyList').innerHTML=COMPANIES.map(c=>{
+    const chg=pctChg(c);const isActive=c.sym===ACTIVE;
+    const ratingColor=c.rating==='BUY'?'var(--ok)':c.rating==='SELL'?'var(--ng)':'var(--t2)';
+    return`<div class="co-row${isActive?' co-active':''}" onclick="selectCompany('${c.sym}')">
+      <div class="co-main"><span class="co-sym">${c.sym}</span><span class="co-rating" style="color:${ratingColor}">${c.rating}</span></div>
+      <div class="co-sub"><span class="co-px">$${c.price.toFixed(2)}</span><span class="co-chg" style="color:${chg>=0?'var(--ok)':'var(--ng)'}">${chg>=0?'+':''}${chg.toFixed(1)}%</span></div>
+    </div>`;
+  }).join('')||'<div style="padding:16px;text-align:center;color:var(--t3);font-size:9px">No companies tracked yet.<br>Click + ADD COMPANY to begin.</div>';
+  el('sb-tracked').textContent=COMPANIES.length+' companies';
+}
+function renderOverviewStats(){
+  const c=COMPANIES.find(x=>x.sym===ACTIVE);if(!c)return;
+  const chg=pctChg(c);
+  el('ov-name').textContent=c.name+' · '+c.sector;
+  el('ov-price').textContent='$'+c.price.toFixed(2);
+  el('ov-chg').textContent=(chg>=0?'+':'')+chg.toFixed(2)+'%';
+  el('ov-chg').style.color=chg>=0?'var(--ok)':'var(--ng)';
+  el('ov-pe').textContent=livePE(c).toFixed(1)+'x';
+  el('ov-mktcap').textContent='$'+liveMktCap(c).toFixed(0)+'B';
+  el('ov-revgrow').textContent=c.revGrowth.toFixed(1)+'%';
+  el('ov-margin').textContent=c.netMargin.toFixed(1)+'%';
+  el('ov-rating').textContent=c.rating;
+  el('ov-rating').className='stat-v '+(c.rating==='BUY'?'v-ok':c.rating==='SELL'?'v-ng':'');
+  el('ov-sentiment').textContent=c.sentiment.toFixed(0)+'/100';
+  el('ov-earnings').textContent=c.daysToEarnings+' days';
+}
+function renderComparisonTable(){
+  const rows=COMPANIES.map(c=>{
+    const chg=pctChg(c);const ratingColor=c.rating==='BUY'?'var(--ok)':c.rating==='SELL'?'var(--ng)':'var(--t2)';
+    return`<tr onclick="selectCompany('${c.sym}')" style="cursor:pointer">
+      <td style="font-weight:700">${c.sym}</td><td>${c.name}</td><td>$${c.price.toFixed(2)}</td>
+      <td style="color:${chg>=0?'var(--ok)':'var(--ng)'}">${chg>=0?'+':''}${chg.toFixed(1)}%</td>
+      <td>${livePE(c).toFixed(1)}x</td><td>$${liveMktCap(c).toFixed(0)}B</td>
+      <td>${c.revGrowth.toFixed(1)}%</td><td>${c.netMargin.toFixed(1)}%</td>
+      <td style="color:${ratingColor};font-weight:700">${c.rating}</td><td>${c.sentiment.toFixed(0)}</td>
+      <td><button class="co-rm" onclick="event.stopPropagation();removeCompanyBySym('${c.sym}')">×</button></td>
+    </tr>`;
+  }).join('');
+  el('comparisonPane').innerHTML=`<table class="comp-table"><thead><tr><th>Sym</th><th>Name</th><th>Price</th><th>Chg</th><th>P/E</th><th>Mkt Cap</th><th>Rev Gr</th><th>Margin</th><th>Rating</th><th>Sent.</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function renderThesisPane(){
+  const c=COMPANIES.find(x=>x.sym===ACTIVE);
+  if(!c){el('thesisContent').textContent='Select a company first.';return}
+  el('thesisContent').textContent=c.thesis?c.thesis:'No AI thesis generated yet for '+c.sym+'. Click below to generate one.';
+}
+function renderEventFeed(){
+  const feed=PLUGINS.journal.log.slice(-14).reverse();
+  el('eventFeed').innerHTML=feed.length?feed.map(ev=>`<div class="log-row"><span class="log-time">D${ev.day}</span><span class="log-msg">${ev.name}: ${ev.msg}</span></div>`).join(''):'<div style="color:var(--t3);font-size:9px;padding:8px 0;text-align:center">No research alerts yet.</div>';
+}
+
+function setTab(tab,btn){
+  activeTab=tab;
+  document.querySelectorAll('#chartTabs .tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');
+  el('overviewPane').style.display=tab==='overview'?'flex':'none';
+  el('comparisonPane').style.display=tab==='comparison'?'block':'none';
+  el('thesisPane').style.display=tab==='thesis'?'flex':'none';
+  if(tab==='overview'){renderOverviewStats();drawPriceChart()}
+  else if(tab==='comparison'){renderComparisonTable()}
+  else{renderThesisPane()}
+}
+function drawPriceChart(){
+  const c=COMPANIES.find(x=>x.sym===ACTIVE);
+  dc('mainChart',(ctx,W,H)=>{
+    if(!c)return;
+    const d=c.priceHist;const n=d.length;
+    if(n<2){ctx.fillStyle='#999';ctx.font='10px JetBrains Mono';ctx.fillText('Start the simulation to build price history.',10,20);return}
+    const mn=Math.min(...d)*0.97,mx=Math.max(...d)*1.03;
+    dg(ctx,W,H,mn,mx,v=>'$'+v.toFixed(0));
+    const up=d[n-1]>=d[0];
+    fa(ctx,d,W,H,mn,mx,up?'#2ECC71':'#FF5C5C');
+    dl(ctx,d,W,H,mn,mx,up?'#2ECC71':'#FF5C5C',1.8);
+  });
+}
+
+function updateUI(){
+  el('tb-tracked').textContent=COMPANIES.length;
+  el('tb-day').textContent=SIM.day;
+  el('tb-alerts').textContent=PLUGINS.journal.log.length;
+  renderCompanyList();
+  if(activeTab==='overview'){renderOverviewStats();drawPriceChart()}
+  else if(activeTab==='comparison'){renderComparisonTable()}
+  else{renderThesisPane()}
+  renderEventFeed();
+}
+
+function step(){
+  if(!SIM.running)return;
+  SIM.day++;
+  COMPANIES.forEach(c=>{
+    const muD=(c.expRet/100)/252,sgD=(c.expVol/100)/Math.sqrt(252);
+    const r=muD-0.5*sgD*sgD+sgD*nr();
+    c.price=Math.max(0.5,+(c.price*Math.exp(r)).toFixed(2));
+    c.priceHist.push(c.price);if(c.priceHist.length>300)c.priceHist.shift();
+    c.daysToEarnings--;
+  });
+  runPlugins();
+  if(!SIM.running)return;
+  updateUI();
+  if(SIM.running)SIM.timer=setTimeout(step,SIM.speed);
+}
+
+function toggleSim(){
+  SIM.running=!SIM.running;
+  const btn=el('mainBtn');
+  if(SIM.running){
+    btn.textContent='⏹ STOP';btn.className='ctrl-btn stop';
+    el('mktStatus').textContent='LIVE';el('mktDot').className='mbdot open';
+    el('simBadge').textContent='LIVE';el('simBadge').className='pbadge live';
+    step();
+  }else{
+    btn.textContent='▶ START';btn.className='ctrl-btn run';
+    el('mktStatus').textContent='PAUSED';el('mktDot').className='mbdot closed';
+    el('simBadge').textContent='IDLE';el('simBadge').className='pbadge idle';
+    clearTimeout(SIM.timer);
+  }
+}
+function setSpeed(v){SIM.speed=parseInt(v)}
+function resetSim(){
+  SIM.running=false;clearTimeout(SIM.timer);
+  el('mainBtn').textContent='▶ START';el('mainBtn').className='ctrl-btn run';
+  el('mktStatus').textContent='IDLE';el('mktDot').className='mbdot closed';
+  el('simBadge').textContent='IDLE';el('simBadge').className='pbadge idle';
+  SIM.day=0;
+  COMPANIES.forEach(c=>{c.price=c.basePrice;c.priceHist=[c.basePrice];c.rating='HOLD';c.sentiment=50;c.daysToEarnings=10+Math.floor(Math.random()*80);c.alertFired=false});
+  PLUGINS.journal.log=[];
+  PLUGINS.sentimentScanner.lastCheck=0;PLUGINS.ratingMonitor.lastCheck=0;PLUGINS.peerComparison.lastCheck=0;PLUGINS.aiPulse.lastPulse=0;
+  el('activityLog').innerHTML='';
+  updateUI();
+  plog('System','Simulation reset','var(--t2)');
+}
+
+async function aiSend(){
+  const q=el('aiInp').value.trim();if(!q)return;el('aiInp').value='';
+  const chat=el('aiChat');
+  const um=document.createElement('div');um.className='ai-msg';um.style.cssText='background:var(--bg3);border:1px solid var(--bdr2);color:var(--t1);font-family:"JetBrains Mono",monospace;font-size:9px;padding:7px 9px;border-radius:3px;align-self:flex-end;max-width:95%;white-space:pre-wrap';um.textContent=q;chat.appendChild(um);
+  const am=document.createElement('div');am.className='ai-msg ai';am.innerHTML='<div class="al">⬡ RESEARCH AI</div><div class="ac"></div>';chat.appendChild(am);
+  chat.scrollTop=chat.scrollHeight;
+
+  const companiesStr=COMPANIES.map(c=>`${c.sym} (${c.name}, ${c.sector}): $${c.price.toFixed(2)} (${pctChg(c).toFixed(1)}%), P/E ${livePE(c).toFixed(1)}x, MktCap $${liveMktCap(c).toFixed(0)}B, RevGrowth ${c.revGrowth}%, Margin ${c.netMargin}%, Rating ${c.rating}, Sentiment ${c.sentiment.toFixed(0)}/100`).join('\n');
+  const context=`You are a senior equity research analyst (CFA) at a top investment bank. Current tracked watchlist (Day ${SIM.day}):
+${companiesStr}
+
+Currently active/selected company: ${ACTIVE||'none'}
+
+User question: ${q}`;
+  SIM.aiHistory.push({role:'user',content:context});
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:SIM.aiHistory})});
+    const d=await res.json();const txt=d.content[0]?.text||'Analysis unavailable.';
+    SIM.aiHistory.push({role:'assistant',content:txt});
+    const ac=am.querySelector('.ac');let i=0;const t=()=>{if(i<txt.length){ac.textContent+=txt[i++];chat.scrollTop=chat.scrollHeight;setTimeout(t,6)}};t();
+  }catch(err){am.querySelector('.ac').textContent='Connection error. Check API.'}
+}
+function aiQ(template){const txt=template.replace(/\{ACTIVE\}/g,ACTIVE||'the tracked companies');el('aiInp').value=txt;aiSend()}
+
+window.addEventListener('resize',()=>{if(activeTab==='overview')drawPriceChart()});
+
+renderCompanyList();updateUI();updatePluginCount();
+</script>
+</body>
+</html>

@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuantDesk · Portfolio Optimization Automation</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap');
+:root{
+  --bg:#040C09;--bg2:#081410;--bg3:#0B1A14;--bg4:#0F2219;--bg5:#143020;
+  --bdr:#16271E;--bdr2:#1E3A2A;--t1:#E2EFE8;--t2:#6A8C7A;--t3:#304A3C;
+  --acc:#10B981;--accd:rgba(16,185,129,.1);--bdra:rgba(16,185,129,.25);
+  --gold:#F0B429;--ok:#00E896;--ng:#FF3D57;--warn:#F59E0B;--purple:#A855F7;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
+::-webkit-scrollbar{width:2px;height:2px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:2px}
+
+.topbar{display:flex;align-items:center;height:42px;padding:0 16px;background:var(--bg2);border-bottom:1px solid var(--bdr);flex-shrink:0;gap:0}
+.logo{display:flex;align-items:center;gap:8px;padding-right:18px;border-right:1px solid var(--bdr);margin-right:18px}
+.logo-icon{width:26px;height:26px;border:1.5px solid var(--acc);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--acc)}
+.logo-text{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--t1)}
+.logo-sub{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:1px}
+.ticker-strip{display:flex;align-items:center;gap:20px;flex:1}
+.ts-item{display:flex;flex-direction:column;gap:1px}
+.ts-l{font-size:7px;color:var(--t3);letter-spacing:1px;font-family:'JetBrains Mono',monospace;text-transform:uppercase}
+.ts-v{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--t1)}
+.ts-v.acc{color:var(--acc)}.ts-v.gold{color:var(--gold)}.ts-v.ok{color:var(--ok)}.ts-v.ng{color:var(--ng)}
+.topbar-right{display:flex;align-items:center;gap:12px;padding-left:16px;border-left:1px solid var(--bdr);margin-left:auto}
+.market-badge{display:flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px}
+.mbdot{width:6px;height:6px;border-radius:50%}
+.mbdot.open{background:var(--ok);box-shadow:0 0 6px var(--ok);animation:glow 2s infinite}
+@keyframes glow{0%,100%{opacity:1}50%{opacity:.5}}
+.mbdot.closed{background:var(--ng)}
+.clk{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t2);letter-spacing:1px}
+.ctrl-btn{background:transparent;border:1px solid var(--bdr2);color:var(--t2);padding:5px 12px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;border-radius:3px;cursor:pointer;transition:all .15s;text-transform:uppercase;position:relative}
+.ctrl-btn:hover{border-color:var(--acc);color:var(--acc)}
+.ctrl-btn.run{background:var(--ok);color:var(--bg);border-color:var(--ok);font-weight:700}
+.ctrl-btn.run:hover{opacity:.85}
+.ctrl-btn.stop{background:var(--ng);color:#fff;border-color:var(--ng);font-weight:700}
+.speed-select{background:var(--bg4);border:1px solid var(--bdr2);color:var(--t1);padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:9px;border-radius:3px;outline:none;cursor:pointer}
+#pluginCount{position:absolute;top:-7px;right:-7px;background:var(--acc);color:var(--bg);font-size:7px;line-height:1;padding:2px 4px;border-radius:8px;font-weight:700}
+
+.body{display:grid;grid-template-columns:235px 1fr 195px 260px;grid-template-rows:1fr;flex:1;overflow:hidden;gap:0}
+.panel{border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden}
+.phead{padding:7px 12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg2)}
+.ptitle{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--acc)}
+.pbadge{font-family:'JetBrains Mono',monospace;font-size:7px;padding:2px 6px;border-radius:2px;letter-spacing:1px;text-transform:uppercase}
+.pbadge.live{background:rgba(0,232,150,.15);color:var(--ok);border:1px solid rgba(0,232,150,.3)}
+.pbadge.idle{background:var(--bg4);color:var(--t3);border:1px solid var(--bdr)}
+
+.left-panel{padding:10px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1}
+.sec-title{font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--t3);padding-bottom:5px;border-bottom:1px solid var(--bdr)}
+.cg{display:flex;flex-direction:column;gap:4px}
+.cl{font-size:8px;color:var(--t2);letter-spacing:1px;text-transform:uppercase}
+input,select{background:var(--bg4);border:1px solid var(--bdr2);color:var(--t1);padding:5px 8px;font-family:'JetBrains Mono',monospace;font-size:11px;border-radius:3px;outline:none;width:100%;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--acc)}
+select option{background:var(--bg3)}
+.bp{background:var(--acc);color:var(--bg);border:none;padding:7px 10px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1px;border-radius:3px;cursor:pointer;width:100%;text-transform:uppercase;transition:opacity .2s}
+.bp:hover{opacity:.85}.bp:disabled{opacity:.4;cursor:not-allowed}
+.bs{background:transparent;color:var(--acc);border:1px solid var(--bdra);padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;border-radius:3px;cursor:pointer;width:100%;text-transform:uppercase;transition:background .2s}
+.bs:hover{background:var(--accd)}
+.asset-row{display:grid;grid-template-columns:46px 1fr 1fr 46px 18px;gap:5px;align-items:center;margin-bottom:4px}
+.asset-hdr{display:grid;grid-template-columns:46px 1fr 1fr 46px 18px;gap:5px;font-size:7px;color:var(--t3);font-family:'JetBrains Mono',monospace;letter-spacing:1px;text-transform:uppercase;padding-bottom:4px}
+.rm-btn{background:var(--ng);color:#fff;border:none;border-radius:2px;cursor:pointer;font-size:10px;width:18px;height:20px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.stat{background:var(--bg3);border:1px solid var(--bdr);border-radius:3px;padding:7px 8px}
+.stat-l{font-size:7px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;font-family:'JetBrains Mono',monospace}
+.stat-v{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;color:var(--t1)}
+.v-ok{color:var(--ok)}.v-ng{color:var(--ng)}.v-acc{color:var(--acc)}.v-gold{color:var(--gold)}.v-warn{color:var(--warn)}
+
+.center-panel{display:flex;flex-direction:column;overflow:hidden;grid-column:2}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--bdr);flex-shrink:0}
+.tabs{display:flex;gap:4px}
+.tab{font-size:8px;font-family:'JetBrains Mono',monospace;color:var(--t2);padding:4px 9px;border:1px solid var(--bdr);border-radius:3px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all .15s}
+.tab.active{color:var(--acc);border-color:var(--bdra);background:var(--accd)}
+.cb{flex:1;padding:10px;position:relative;min-height:0}
+canvas{display:block;width:100%!important;height:100%!important}
+.chart-foot{display:flex;align-items:center;gap:12px;padding:5px 12px;border-top:1px solid var(--bdr);flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3)}
+
+.alloc-panel{display:flex;flex-direction:column;overflow:hidden}
+.alloc-list{flex:1;overflow-y:auto;padding:10px}
+.ar{display:flex;align-items:center;gap:6px}
+.as{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;width:44px;flex-shrink:0}
+.ab{flex:1;height:6px;background:var(--bdr);border-radius:3px;overflow:hidden}
+.af{height:100%;border-radius:3px;transition:width .5s}
+.ap{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t2);width:36px;text-align:right;flex-shrink:0}
+.drift-lbl{font-size:7px;font-family:'JetBrains Mono',monospace;margin:1px 0 7px 50px}
+.event-feed{border-top:1px solid var(--bdr);padding:8px 10px;flex-shrink:0;max-height:180px;overflow-y:auto}
+
+.ai-area{display:flex;flex-direction:column;overflow:hidden}
+.ai-chat{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:7px}
+.ai-msg{padding:8px 10px;border-radius:3px;font-size:10px;line-height:1.7}
+.ai-msg.ai{background:var(--bg3);border:1px solid var(--bdr);color:var(--t2);white-space:pre-wrap}
+.ai-msg.ai .al{font-size:7px;color:var(--acc);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:4px}
+.ai-input-row{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--bdr);flex-shrink:0}
+.ai-input-row input{flex:1;font-size:10px;padding:5px 8px}
+.ai-send{background:var(--acc);color:var(--bg);border:none;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;border-radius:3px;cursor:pointer;letter-spacing:1px;flex-shrink:0}
+.qp-btn{background:transparent;border:1px solid var(--bdr);color:var(--t2);padding:4px 7px;font-family:'JetBrains Mono',monospace;font-size:8px;border-radius:3px;cursor:pointer;text-align:left;transition:all .15s;width:100%;margin-bottom:3px;letter-spacing:.5px}
+.qp-btn:hover{border-color:var(--bdra);color:var(--acc);background:var(--accd)}
+
+.statusbar{display:flex;align-items:center;gap:16px;padding:4px 16px;background:var(--bg2);border-top:1px solid var(--bdr);font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3);flex-shrink:0}
+.sb-sep{color:var(--bdr2)}
+
+.plugins-backdrop{position:fixed;inset:42px 0 0 0;background:rgba(0,0,0,.55);z-index:65;opacity:0;pointer-events:none;transition:opacity .2s}
+.plugins-backdrop.show{opacity:1;pointer-events:auto}
+.plugins-drawer{position:fixed;top:42px;right:0;bottom:0;width:380px;background:var(--bg);border-left:1px solid var(--bdr2);z-index:70;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;box-shadow:-10px 0 28px rgba(0,0,0,.5)}
+.plugins-drawer.open{transform:translateX(0)}
+.drawer-header{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--bdr);flex-shrink:0;background:var(--bg2)}
+.drawer-close{background:transparent;border:1px solid var(--bdr2);color:var(--t2);width:22px;height:22px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1}
+.drawer-close:hover{color:var(--ng);border-color:var(--ng)}
+.drawer-body{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+.drawer-sub{font-size:9px;color:var(--t3);line-height:1.6;margin-bottom:2px}
+.pcard{border:1px solid var(--bdr);border-radius:4px;padding:10px;background:var(--bg3);transition:border-color .2s}
+.pcard.active{border-color:var(--bdra)}
+.pcard-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.pcard-name{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--t1)}
+.pcard-desc{font-size:9px;color:var(--t2);margin-top:3px;line-height:1.5}
+.pcard-params{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.pcard-params input{font-size:10px;padding:4px 6px}
+.pcard-status{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3);margin-top:7px;padding-top:6px;border-top:1px solid var(--bdr)}
+.pcard-btn{width:100%;margin-top:7px;background:var(--accd);border:1px solid var(--bdra);color:var(--acc);padding:5px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:9px;cursor:pointer;letter-spacing:1px;text-transform:uppercase}
+.pcard-btn:hover{background:rgba(16,185,129,.2)}
+.tgl{width:32px;height:18px;border-radius:9px;background:var(--bdr2);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;margin-top:1px}
+.tgl::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--t2);transition:all .2s}
+.tgl.on{background:rgba(0,232,150,.35)}
+.tgl.on::after{left:16px;background:var(--ok)}
+.activity-log{display:flex;flex-direction:column;gap:3px;max-height:170px;overflow-y:auto}
+.log-row{display:grid;grid-template-columns:32px 1fr;gap:6px;font-family:'JetBrains Mono',monospace;font-size:8px;padding:3px 6px;border-left:2px solid var(--bdr2);background:var(--bg3);border-radius:0 3px 3px 0}
+.log-time{color:var(--t3)}
+.log-msg{color:var(--t2)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-icon">◈</div>
+    <div><div class="logo-text">PORTFOLIO OPT.</div><div class="logo-sub">AUTOMATED MPT DESK</div></div>
+  </div>
+  <div class="ticker-strip">
+    <div class="ts-item"><div class="ts-l">NAV</div><div class="ts-v acc" id="tb-nav">$1,000,000</div></div>
+    <div class="ts-item"><div class="ts-l">Day</div><div class="ts-v" id="tb-day">0</div></div>
+    <div class="ts-item"><div class="ts-l">Today</div><div class="ts-v" id="tb-today">+0.00%</div></div>
+    <div class="ts-item"><div class="ts-l">Sharpe</div><div class="ts-v gold" id="tb-sharpe">-</div></div>
+    <div class="ts-item"><div class="ts-l">Objective</div><div class="ts-v" id="tb-obj">MAX SHARPE</div></div>
+  </div>
+  <div class="topbar-right">
+    <div class="market-badge">
+      <div class="mbdot closed" id="mktDot"></div>
+      <span style="color:var(--t2)" id="mktStatus">IDLE</span>
+    </div>
+    <select class="speed-select" id="speedSel" onchange="setSpeed(this.value)">
+      <option value="300">1× SPEED</option>
+      <option value="150" selected>2× SPEED</option>
+      <option value="60">5× SPEED</option>
+      <option value="20">15× SPEED</option>
+    </select>
+    <button class="ctrl-btn run" id="mainBtn" onclick="toggleSim()">▶ START</button>
+    <button class="ctrl-btn" onclick="resetSim()">↺ RESET</button>
+    <button class="ctrl-btn" id="pluginsBtn" onclick="openDrawer()">⚙ PLUGINS<span id="pluginCount">0</span></button>
+    <div class="clk" id="clk">--:--:--</div>
+  </div>
+</div>
+
+<div class="body">
+
+<div class="panel">
+  <div class="phead">
+    <div class="ptitle">Portfolio Setup</div>
+    <div class="pbadge idle" id="simBadge">IDLE</div>
+  </div>
+  <div class="left-panel">
+    <div class="sec-title">Asset Universe</div>
+    <div class="asset-hdr"><span>SYM</span><span>RET%</span><span>VOL%</span><span style="text-align:right">WT%</span><span></span></div>
+    <div id="universeTable"></div>
+    <button class="bs" onclick="openDrawer()">+ ADD ASSET</button>
+    <button class="bs" onclick="loadPreset()" style="margin-top:3px">⟳ LOAD DIVERSIFIED PRESET</button>
+
+    <div class="sec-title" style="margin-top:4px">Optimization Engine</div>
+    <div class="cg"><div class="cl">Objective</div>
+      <select id="objectiveSel">
+        <option value="sharpe">Max Sharpe Ratio</option>
+        <option value="minvol">Min Volatility</option>
+        <option value="riskparity">Risk Parity (inv-vol)</option>
+        <option value="equal">Equal Weight</option>
+      </select>
+    </div>
+    <div class="cg"><div class="cl">Risk-Free Rate (%)</div><input id="rfRateInput" value="5.0" type="number" step="0.1" onchange="SIM.rfRate=+this.value"></div>
+    <button class="bp" onclick="runOptimizationNow(false)">◈ RUN OPTIMIZATION</button>
+
+    <div class="sec-title" style="margin-top:4px">Performance</div>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-l">Total NAV</div><div class="stat-v v-acc" id="s-nav">$1,000,000</div></div>
+      <div class="stat"><div class="stat-l">Total Return</div><div class="stat-v" id="s-totalret">0.00%</div></div>
+      <div class="stat"><div class="stat-l">Ann. Return</div><div class="stat-v v-ok" id="s-annret">-</div></div>
+      <div class="stat"><div class="stat-l">Realized Vol</div><div class="stat-v v-warn" id="s-annvol">-</div></div>
+      <div class="stat"><div class="stat-l">Sharpe</div><div class="stat-v v-gold" id="s-sharpe">-</div></div>
+      <div class="stat"><div class="stat-l">Max Drawdown</div><div class="stat-v v-ng" id="s-mdd">0.00%</div></div>
+      <div class="stat"><div class="stat-l">Rebalances</div><div class="stat-v" id="s-rebal">0</div></div>
+      <div class="stat"><div class="stat-l">Day</div><div class="stat-v" id="s-day">0</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="center-panel">
+  <div class="ch">
+    <div class="tabs" id="chartTabs">
+      <div class="tab active" onclick="setChartTab('nav',this)">NAV History</div>
+      <div class="tab" onclick="setChartTab('frontier',this)">Efficient Frontier</div>
+      <div class="tab" onclick="setChartTab('risk',this)">Risk Decomposition</div>
+    </div>
+    <span style="font-size:8px;color:var(--t2);font-family:'JetBrains Mono',monospace" id="chartLbl">Portfolio NAV vs equal-weight benchmark</span>
+  </div>
+  <div class="cb"><canvas id="mainChart"></canvas></div>
+  <div class="chart-foot">
+    <span style="color:var(--acc)">●</span><span>Portfolio</span>
+    <span style="color:#5A6B7A">●</span><span>Benchmark (Equal-Weight Buy &amp; Hold)</span>
+    <span style="margin-left:auto">MODEL: MEAN-VARIANCE OPTIMIZATION (MARKOWITZ) · MONTE CARLO 1,500 SIMS</span>
+  </div>
+</div>
+
+<div class="panel alloc-panel">
+  <div class="phead">
+    <div class="ptitle">Live Allocation</div>
+  </div>
+  <div class="alloc-list" id="allocList"></div>
+  <div class="event-feed">
+    <div class="sec-title" style="margin-bottom:5px">Rebalance Events</div>
+    <div id="eventFeed"></div>
+  </div>
+</div>
+
+<div class="panel ai-area" style="border-right:none">
+  <div class="phead">
+    <div class="ptitle">AI Advisor · Claude</div>
+    <div class="pbadge live">POWERED</div>
+  </div>
+  <div style="padding:8px 10px;border-bottom:1px solid var(--bdr);flex-shrink:0;display:flex;flex-direction:column;gap:3px">
+    <button class="qp-btn" onclick="aiQ('Analyze my current portfolio allocation and realized performance vs the equal-weight benchmark. Is the current objective appropriate for the realized volatility regime?')">📊 Performance vs Benchmark</button>
+    <button class="qp-btn" onclick="aiQ('Assess concentration risk and diversification quality in my current weights. Any single-asset or correlation risk I should be worried about?')">⚠️ Concentration Risk Check</button>
+    <button class="qp-btn" onclick="aiQ('Given my current drawdown and risk metrics, should I rebalance now or wait? What is the optimal rebalance frequency for this asset universe?')">🔄 Rebalance Timing Advice</button>
+    <button class="qp-btn" onclick="aiQ('Compare Max Sharpe vs Min Variance vs Risk Parity for my current asset universe and recommend one given current realized volatility.')">⚖ Objective Comparison</button>
+  </div>
+  <div class="ai-chat" id="aiChat">
+    <div class="ai-msg ai"><div class="al">⬡ PORTFOLIO AI</div>I'm monitoring your live portfolio simulation. Add assets, pick an optimization objective, and press START — I'll track NAV, Sharpe, drawdown, and allocation drift in real time. Use the quick prompts above or ask me anything about the portfolio.</div>
+  </div>
+  <div class="ai-input-row">
+    <input id="aiInp" placeholder="Ask about allocation, risk, rebalancing..." onkeydown="if(event.key==='Enter')aiSend()">
+    <button class="ai-send" onclick="aiSend()">SEND</button>
+  </div>
+</div>
+
+</div>
+
+<div class="statusbar">
+  <span style="color:var(--t3)">ENGINE</span><span style="color:var(--t2)">MEAN-VARIANCE OPTIMIZATION (MARKOWITZ)</span>
+  <span class="sb-sep">|</span>
+  <span style="color:var(--t3)">REBALANCE</span><span style="color:var(--t2)">AUTOMATED VIA PLUGIN ENGINE</span>
+  <span class="sb-sep">|</span>
+  <span style="color:var(--t3)">BENCHMARK</span><span style="color:var(--t2)">EQUAL-WEIGHT BUY &amp; HOLD</span>
+  <span class="sb-sep">|</span>
+  <span style="color:var(--t3)">UNIVERSE</span><span style="color:var(--t2)" id="sb-uni">4 assets</span>
+  <span style="margin-left:auto;color:var(--t3)">AI</span><span style="color:var(--acc)">CLAUDE SONNET</span>
+  <span class="sb-sep">|</span>
+  <span style="color:var(--ng)">⚠ SIMULATION ONLY — NOT FINANCIAL ADVICE</span>
+</div>
+
+<div class="plugins-backdrop" id="pluginsBackdrop" onclick="closeDrawer()"></div>
+<div class="plugins-drawer" id="pluginsDrawer">
+  <div class="drawer-header">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--acc)">⚙ AUTOMATION PLUGINS</div>
+    <button class="drawer-close" onclick="closeDrawer()">×</button>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-sub">9 autonomous modules running inside the live simulation loop. Enable any combination — each acts independently once toggled on.</div>
+
+    <div class="pcard" id="pc-autoRebalancer">
+      <div class="pcard-head">
+        <div><div class="pcard-name">🔄 Auto-Rebalancer</div><div class="pcard-desc">Checks drift from target weights on a schedule and rebalances back to target the moment drift exceeds threshold.</div></div>
+        <div class="tgl" onclick="togglePlugin('autoRebalancer',this)"></div>
+      </div>
+      <div class="pcard-params">
+        <div class="cg"><div class="cl">Drift Threshold (%)</div><input type="number" value="5" onchange="PLUGINS.autoRebalancer.driftThreshold=+this.value"></div>
+        <div class="cg"><div class="cl">Check Every (days)</div><input type="number" value="5" onchange="PLUGINS.autoRebalancer.checkEvery=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-rebal">Idle — not monitoring</div>
+    </div>
+
+    <div class="pcard" id="pc-drawdownGuardian">
+      <div class="pcard-head">
+        <div><div class="pcard-name">🛡 Drawdown Guardian</div><div class="pcard-desc">Auto-shifts the entire portfolio to the Min-Volatility allocation the instant max drawdown breaches your limit.</div></div>
+        <div class="tgl" onclick="togglePlugin('drawdownGuardian',this)"></div>
+      </div>
+      <div class="pcard-params" style="grid-template-columns:1fr">
+        <div class="cg"><div class="cl">Max Drawdown Limit (%)</div><input type="number" value="10" onchange="PLUGINS.drawdownGuardian.maxDD=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-dd">Idle — not monitoring</div>
+    </div>
+
+    <div class="pcard" id="pc-regimeOptimizer">
+      <div class="pcard-head">
+        <div><div class="pcard-name">📊 Regime-Adaptive Optimizer</div><div class="pcard-desc">Reads realized portfolio volatility and auto-switches between Max Sharpe / Risk Parity / Min Vol as the regime shifts.</div></div>
+        <div class="tgl" onclick="togglePlugin('regimeOptimizer',this)"></div>
+      </div>
+      <div class="pcard-params">
+        <div class="cg"><div class="cl">Check Every (days)</div><input type="number" value="21" onchange="PLUGINS.regimeOptimizer.checkEvery=+this.value"></div>
+        <div class="cg"><div class="cl">High Vol Trigger (%)</div><input type="number" value="28" onchange="PLUGINS.regimeOptimizer.highVolThresh=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-regime">Idle — not monitoring</div>
+    </div>
+
+    <div class="pcard" id="pc-correlationMonitor">
+      <div class="pcard-head">
+        <div><div class="pcard-name">🌐 Correlation Monitor</div><div class="pcard-desc">Tracks average pairwise correlation across the universe and flags diversification breakdown in crisis-like regimes.</div></div>
+        <div class="tgl" onclick="togglePlugin('correlationMonitor',this)"></div>
+      </div>
+      <div class="pcard-params">
+        <div class="cg"><div class="cl">Check Every (days)</div><input type="number" value="10" onchange="PLUGINS.correlationMonitor.checkEvery=+this.value"></div>
+        <div class="cg"><div class="cl">Spike Trigger (%)</div><input type="number" value="55" onchange="PLUGINS.correlationMonitor.spikeThreshold=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-corr">Idle — not monitoring</div>
+    </div>
+
+    <div class="pcard" id="pc-taxLossHarvester">
+      <div class="pcard-head">
+        <div><div class="pcard-name">💰 Tax-Loss Harvester</div><div class="pcard-desc">Continuously scans for unrealized losses past threshold, simulates harvesting them, and resets cost basis.</div></div>
+        <div class="tgl" onclick="togglePlugin('taxLossHarvester',this)"></div>
+      </div>
+      <div class="pcard-params">
+        <div class="cg"><div class="cl">Loss Trigger (%)</div><input type="number" value="8" onchange="PLUGINS.taxLossHarvester.lossThreshold=+this.value"></div>
+        <div class="cg"><div class="cl">Tax Rate (%)</div><input type="number" value="25" onchange="PLUGINS.taxLossHarvester.taxRate=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-tax">Lifetime tax alpha: $0</div>
+    </div>
+
+    <div class="pcard" id="pc-constraintEnforcer">
+      <div class="pcard-head">
+        <div><div class="pcard-name">⚖ Constraint Enforcer</div><div class="pcard-desc">Clips every rebalance to a min/max weight band per asset and renormalizes — applies to ALL rebalances, manual or automated.</div></div>
+        <div class="tgl" onclick="togglePlugin('constraintEnforcer',this)"></div>
+      </div>
+      <div class="pcard-params">
+        <div class="cg"><div class="cl">Max Weight (%)</div><input type="number" value="35" onchange="PLUGINS.constraintEnforcer.maxWeight=+this.value"></div>
+        <div class="cg"><div class="cl">Min Weight (%)</div><input type="number" value="2" onchange="PLUGINS.constraintEnforcer.minWeight=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-constraint">Idle — applies on next rebalance</div>
+    </div>
+
+    <div class="pcard" id="pc-aiPulse">
+      <div class="pcard-head">
+        <div><div class="pcard-name">⬡ AI Co-Pilot Pulse</div><div class="pcard-desc">Claude auto-narrates the portfolio every N days — no prompting needed, posts straight into the chat.</div></div>
+        <div class="tgl" onclick="togglePlugin('aiPulse',this)"></div>
+      </div>
+      <div class="pcard-params" style="grid-template-columns:1fr">
+        <div class="cg"><div class="cl">Pulse Every (days)</div><input type="number" value="30" onchange="PLUGINS.aiPulse.interval=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-pulse">Idle — not pulsing</div>
+    </div>
+
+    <div class="pcard" id="pc-journal">
+      <div class="pcard-head">
+        <div><div class="pcard-name">📓 Rebalance Journal</div><div class="pcard-desc">Silently logs every rebalance and automation event in the background. Export the full session anytime as CSV.</div></div>
+        <div class="tgl on" onclick="togglePlugin('journal',this)"></div>
+      </div>
+      <div class="pcard-status" id="pst-journal">0 events logged</div>
+      <button class="pcard-btn" onclick="exportJournal()">⬇ Export CSV</button>
+    </div>
+
+    <div class="pcard active" id="pc-multiAsset">
+      <div class="pcard-head">
+        <div><div class="pcard-name">🏢 Multi-Asset Universe Manager</div><div class="pcard-desc">Add any company or ETF to the live optimization universe — it joins instantly and is included in the next rebalance.</div></div>
+        <div class="tgl on" onclick="togglePlugin('multiAsset',this)"></div>
+      </div>
+      <div class="pcard-params">
+        <div class="cg"><div class="cl">Ticker</div><input id="newAssetSym" placeholder="TSM" style="text-transform:uppercase"></div>
+        <div class="cg"><div class="cl">Start Price ($)</div><input id="newAssetPrice" type="number" value="100" step="0.01"></div>
+        <div class="cg" style="grid-column:1/3"><div class="cl">Company Name</div><input id="newAssetName" placeholder="Taiwan Semiconductor"></div>
+        <div class="cg"><div class="cl">Exp. Return (%)</div><input id="newAssetRet" type="number" value="11" step="0.1"></div>
+        <div class="cg"><div class="cl">Exp. Volatility (%)</div><input id="newAssetVol" type="number" value="24" step="0.1"></div>
+      </div>
+      <button class="pcard-btn" onclick="addAsset()">+ ADD TO UNIVERSE</button>
+      <div class="pcard-status" id="pst-multi">4 assets in universe</div>
+    </div>
+
+    <div class="drawer-sub" style="margin-top:2px;border-top:1px solid var(--bdr);padding-top:9px">Automation Activity Log</div>
+    <div class="activity-log" id="activityLog"></div>
+  </div>
+</div>
+
+<script>
+const el=id=>document.getElementById(id);
+const nr=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+const fmtUSD=n=>(n>=0?'$':'-$')+Math.abs(Math.round(n)).toLocaleString('en-US');
+const ALLOC_COLORS=['#10B981','#00C8FF','#F0B429','#FF6B35','#A855F7','#EC4899','#00E896','#3B82F6'];
+
+function dc(cid,fn){const c=el(cid);if(!c)return;const ctx=c.getContext('2d');const r=c.parentElement.getBoundingClientRect();c.width=r.width-20;c.height=r.height-20;ctx.clearRect(0,0,c.width,c.height);fn(ctx,c.width,c.height)}
+function dg(ctx,W,H,mn,mx,fmt=v=>'$'+v.toFixed(0)){for(let i=0;i<=4;i++){const y=H*i/4;ctx.strokeStyle='#16271E';ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();ctx.fillStyle='#304A3C';ctx.font='8px JetBrains Mono';ctx.fillText(fmt(mx-(mx-mn)*i/4),3,y-2)}}
+function dl(ctx,d,W,H,mn,mx,col,lw=1.5){const n=d.length;if(n<2)return;const px=i=>(i/(n-1))*W;const py=v=>H-(v-mn)/(mx-mn)*(H-4)-2;ctx.beginPath();d.forEach((v,i)=>{i===0?ctx.moveTo(px(i),py(v)):ctx.lineTo(px(i),py(v))});ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.stroke()}
+function fa(ctx,d,W,H,mn,mx,col){const n=d.length;if(n<2)return;const px=i=>(i/(n-1))*W;const py=v=>H-(v-mn)/(mx-mn)*(H-4)-2;const gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,col+'33');gr.addColorStop(1,col+'00');ctx.beginPath();d.forEach((v,i)=>{i===0?ctx.moveTo(px(i),py(v)):ctx.lineTo(px(i),py(v))});ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fillStyle=gr;ctx.fill()}
+
+setInterval(()=>{el('clk').textContent=new Date().toLocaleTimeString('en-US',{hour12:false})},1000);
+
+let UNIVERSE=[
+  {sym:'AAPL',name:'Apple Inc.',expRet:12.5,expVol:22.3,price:185.40,basePrice:185.40,shares:0},
+  {sym:'MSFT',name:'Microsoft Corp.',expRet:11.8,expVol:19.7,price:420.30,basePrice:420.30,shares:0},
+  {sym:'GOOGL',name:'Alphabet Inc.',expRet:10.2,expVol:24.1,price:165.20,basePrice:165.20,shares:0},
+  {sym:'AMZN',name:'Amazon.com',expRet:13.1,expVol:27.5,price:185.00,basePrice:185.00,shares:0},
+];
+let targetWeights={};
+let benchShares=[];
+
+let SIM={
+  running:false,timer:null,speed:150,day:0,
+  objective:'sharpe',rfRate:5,
+  cash:1000000,totalNAV:1000000,
+  navHist:[1000000],benchHist:[1000000],
+  peakNAV:1000000,mdd:0,
+  rebalances:0,lastRebalDay:0,
+  efficientFrontier:null,benchInitialized:false,
+  aiHistory:[],
+};
+
+let PLUGINS={
+  autoRebalancer:{enabled:false,driftThreshold:5,checkEvery:5,lastCheck:0},
+  drawdownGuardian:{enabled:false,maxDD:10,tripped:false,cooldown:0},
+  regimeOptimizer:{enabled:false,checkEvery:21,lowVolThresh:15,highVolThresh:28,lastCheck:0,currentRegime:'sharpe'},
+  correlationMonitor:{enabled:false,checkEvery:10,spikeThreshold:55,lastCheck:0,avgCorr:0.30},
+  taxLossHarvester:{enabled:false,lossThreshold:8,taxRate:25,totalHarvested:0,costBasis:{}},
+  constraintEnforcer:{enabled:false,maxWeight:35,minWeight:2},
+  aiPulse:{enabled:false,interval:30,lastPulse:0},
+  journal:{enabled:true,log:[]},
+  multiAsset:{enabled:true},
+};
+const PLUGIN_NAMES={autoRebalancer:'Auto-Rebalancer',drawdownGuardian:'Drawdown Guardian',regimeOptimizer:'Regime Optimizer',correlationMonitor:'Correlation Monitor',taxLossHarvester:'Tax-Loss Harvester',constraintEnforcer:'Constraint Enforcer',aiPulse:'AI Pulse',journal:'Rebalance Journal',multiAsset:'Multi-Asset Manager'};
+
+UNIVERSE.forEach(a=>PLUGINS.taxLossHarvester.costBasis[a.sym]=a.price);
+
+function plog(name,msg,color){
+  color=color||'var(--t2)';
+  const log=el('activityLog');if(!log)return;
+  const row=document.createElement('div');row.className='log-row';row.style.borderLeftColor=color;
+  row.innerHTML=`<span class="log-time">D${SIM.day}</span><span class="log-msg" style="color:${color}">${name}: ${msg}</span>`;
+  log.insertBefore(row,log.firstChild);
+  while(log.children.length>60)log.removeChild(log.lastChild);
+}
+function togglePlugin(key,toggleEl){
+  PLUGINS[key].enabled=!PLUGINS[key].enabled;
+  toggleEl.classList.toggle('on',PLUGINS[key].enabled);
+  el('pc-'+key)?.classList.toggle('active',PLUGINS[key].enabled);
+  updatePluginCount();
+  plog(PLUGIN_NAMES[key],PLUGINS[key].enabled?'Activated — now running automatically':'Deactivated','var(--ok)');
+  if(key==='drawdownGuardian'&&PLUGINS[key].enabled){PLUGINS.drawdownGuardian.tripped=false}
+}
+function updatePluginCount(){const n=Object.values(PLUGINS).filter(p=>p.enabled).length;const b=el('pluginCount');if(b)b.textContent=n}
+function openDrawer(){el('pluginsDrawer').classList.add('open');el('pluginsBackdrop').classList.add('show')}
+function closeDrawer(){el('pluginsDrawer').classList.remove('open');el('pluginsBackdrop').classList.remove('show')}
+
+function exportJournal(){
+  if(!PLUGINS.journal.log.length){alert('No events logged yet — run the simulation first.');return}
+  const headers='day,event,nav\n';
+  const rows=PLUGINS.journal.log.map(r=>`${r.day},"${r.event}",${r.nav}`).join('\n');
+  const blob=new Blob([headers+rows],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='portfolio_rebalance_journal_'+Date.now()+'.csv';document.body.appendChild(a);a.click();a.remove();
+  URL.revokeObjectURL(url);
+  plog('Rebalance Journal','Exported '+PLUGINS.journal.log.length+' events to CSV','var(--ok)');
+}
+
+function runMonteCarlo(nSims=1500){
+  const n=UNIVERSE.length;
+  const corr=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1:.15+Math.random()*.45));
+  const sims=[];
+  for(let s=0;s<nSims;s++){
+    let w=Array.from({length:n},()=>Math.random());const sw=w.reduce((a,b)=>a+b,0);w=w.map(x=>x/sw);
+    const ret=w.reduce((a,wi,i)=>a+wi*UNIVERSE[i].expRet/100,0);
+    let varP=0;for(let i=0;i<n;i++)for(let j=0;j<n;j++)varP+=w[i]*w[j]*(UNIVERSE[i].expVol/100)*(UNIVERSE[j].expVol/100)*corr[i][j];
+    const vol=Math.sqrt(varP);const rf=SIM.rfRate/100;
+    sims.push({w,ret,vol,shr:(ret-rf)/vol});
+  }
+  return{sims,corr};
+}
+function portfolioStats(w,corr){
+  const n=UNIVERSE.length;const ret=w.reduce((a,wi,i)=>a+wi*UNIVERSE[i].expRet/100,0);
+  let varP=0;for(let i=0;i<n;i++)for(let j=0;j<n;j++)varP+=w[i]*w[j]*(UNIVERSE[i].expVol/100)*(UNIVERSE[j].expVol/100)*corr[i][j];
+  const vol=Math.sqrt(varP);return{w,ret,vol,shr:(ret-SIM.rfRate/100)/vol};
+}
+function getTargetWeights(objective){
+  const{sims,corr}=runMonteCarlo();SIM.efficientFrontier={sims};
+  const n=UNIVERSE.length;
+  if(objective==='sharpe')return sims.reduce((a,b)=>b.shr>a.shr?b:a);
+  if(objective==='minvol')return sims.reduce((a,b)=>b.vol<a.vol?b:a);
+  if(objective==='riskparity'){
+    const invVols=UNIVERSE.map(a=>1/(a.expVol/100));const sum=invVols.reduce((a,b)=>a+b,0);
+    const w=invVols.map(v=>v/sum);return portfolioStats(w,corr);
+  }
+  const w=UNIVERSE.map(()=>1/n);return portfolioStats(w,corr);
+}
+
+function computeNAV(){return SIM.cash+UNIVERSE.reduce((s,a)=>s+a.shares*a.price,0)}
+function computeBenchNAV(){return UNIVERSE.reduce((s,a,i)=>s+(benchShares[i]||0)*a.price,0)}
+function initBenchmark(){const nav=SIM.totalNAV;benchShares=UNIVERSE.map(a=>(nav/UNIVERSE.length)/a.price)}
+
+function executeRebalance(newW,reason){
+  let w=[...newW];
+  if(PLUGINS.constraintEnforcer.enabled){
+    const maxW=PLUGINS.constraintEnforcer.maxWeight/100,minW=PLUGINS.constraintEnforcer.minWeight/100;
+    let clipped=false;
+    w=w.map(x=>{if(x>maxW){clipped=true;return maxW}if(x<minW){clipped=true;return minW}return x});
+    const s=w.reduce((a,b)=>a+b,0);w=w.map(x=>x/s);
+    if(clipped)plog('Constraint Enforcer','Clipped weights to ['+PLUGINS.constraintEnforcer.minWeight+'%–'+PLUGINS.constraintEnforcer.maxWeight+'%] band','var(--purple)');
+  }
+  const nav=computeNAV();let invested=0;
+  UNIVERSE.forEach((a,i)=>{const val=nav*(w[i]||0);a.shares=val/a.price;targetWeights[a.sym]=w[i]||0;invested+=val});
+  SIM.cash=nav-invested;SIM.rebalances++;SIM.lastRebalDay=SIM.day;
+  PLUGINS.journal.log.push({day:SIM.day,event:reason,nav:nav.toFixed(2)});
+  plog('Rebalance',reason+' — NAV '+fmtUSD(nav),'var(--acc)');
+  renderAllocation();
+}
+function runOptimizationNow(silent){
+  const objective=el('objectiveSel').value;SIM.objective=objective;
+  const result=getTargetWeights(objective);
+  executeRebalance(result.w,silent?'Initial allocation ('+objective.toUpperCase()+')':'Manual re-optimization ('+objective.toUpperCase()+')');
+  if(activeChart==='frontier')drawActiveChart();
+}
+
+function computeRealizedStats(){
+  const navs=SIM.navHist;if(navs.length<2)return{annRet:0,annVol:0,sharpe:0};
+  const rets=navs.slice(1).map((v,i)=>v/navs[i]-1);
+  const mean=rets.reduce((a,b)=>a+b,0)/rets.length;
+  const std=Math.sqrt(rets.reduce((s,v)=>s+(v-mean)**2,0)/rets.length);
+  const annRet=((navs[navs.length-1]/navs[0])**(252/Math.max(1,navs.length-1))-1)*100;
+  const annVol=std*Math.sqrt(252)*100;
+  const sharpe=annVol>0?(annRet-SIM.rfRate)/annVol:0;
+  return{annRet,annVol,sharpe};
+}
+function computeRiskContributions(){
+  const nav=SIM.totalNAV||1;const w=UNIVERSE.map(a=>(a.shares*a.price)/nav);
+  const vols=UNIVERSE.map(a=>a.expVol/100);const ac=PLUGINS.correlationMonitor.avgCorr||0.30;
+  const n=UNIVERSE.length;let portVar=0;
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++)portVar+=w[i]*w[j]*vols[i]*vols[j]*(i===j?1:ac);
+  const contributions=UNIVERSE.map((a,i)=>{
+    let mc=0;for(let j=0;j<n;j++)mc+=w[j]*vols[i]*vols[j]*(i===j?1:ac);
+    const contrib=portVar>0?w[i]*mc/portVar:0;
+    return{sym:a.sym,pct:Math.max(0,contrib*100)};
+  });
+  return{contributions,portVol:Math.sqrt(portVar)*100};
+}
+
+function runPlugins(){
+  const nav=SIM.totalNAV;
+
+  if(PLUGINS.drawdownGuardian.enabled){
+    if(PLUGINS.drawdownGuardian.cooldown>0){
+      PLUGINS.drawdownGuardian.cooldown--;
+      el('pst-dd').textContent='Cooldown: '+PLUGINS.drawdownGuardian.cooldown+' days';
+    }else if(SIM.mdd<=-Math.abs(PLUGINS.drawdownGuardian.maxDD)&&!PLUGINS.drawdownGuardian.tripped){
+      const mv=getTargetWeights('minvol');
+      executeRebalance(mv.w,'Drawdown Guardian: DD breach -> shifted to Min-Vol');
+      PLUGINS.drawdownGuardian.tripped=true;PLUGINS.drawdownGuardian.cooldown=15;
+      plog('Drawdown Guardian','🛡 DD '+SIM.mdd.toFixed(1)+'% breached limit -'+PLUGINS.drawdownGuardian.maxDD+'% — de-risked','var(--ng)');
+    }else{
+      if(SIM.mdd>-Math.abs(PLUGINS.drawdownGuardian.maxDD)*0.5)PLUGINS.drawdownGuardian.tripped=false;
+      el('pst-dd').textContent='Monitoring — DD '+SIM.mdd.toFixed(1)+'% / limit -'+PLUGINS.drawdownGuardian.maxDD+'%';
+    }
+  }
+
+  if(PLUGINS.autoRebalancer.enabled&&SIM.day-PLUGINS.autoRebalancer.lastCheck>=PLUGINS.autoRebalancer.checkEvery){
+    PLUGINS.autoRebalancer.lastCheck=SIM.day;
+    let maxDrift=0;
+    UNIVERSE.forEach(a=>{const curW=(a.shares*a.price)/nav;const tgtW=targetWeights[a.sym]||0;maxDrift=Math.max(maxDrift,Math.abs(curW-tgtW)*100)});
+    el('pst-rebal').textContent='Max drift '+maxDrift.toFixed(1)+'% (check day '+SIM.day+')';
+    if(maxDrift>=PLUGINS.autoRebalancer.driftThreshold){
+      const tw=UNIVERSE.map(a=>targetWeights[a.sym]||1/UNIVERSE.length);
+      executeRebalance(tw,'Auto-Rebalancer: drift '+maxDrift.toFixed(1)+'% -> back to target');
+    }
+  }
+
+  if(PLUGINS.regimeOptimizer.enabled&&SIM.day-PLUGINS.regimeOptimizer.lastCheck>=PLUGINS.regimeOptimizer.checkEvery&&SIM.navHist.length>25){
+    PLUGINS.regimeOptimizer.lastCheck=SIM.day;
+    const{annVol}=computeRealizedStats();
+    const newRegime=annVol>PLUGINS.regimeOptimizer.highVolThresh?'minvol':annVol<PLUGINS.regimeOptimizer.lowVolThresh?'sharpe':'riskparity';
+    el('pst-regime').textContent='Realized vol '+annVol.toFixed(1)+'% -> '+newRegime.toUpperCase();
+    if(newRegime!==PLUGINS.regimeOptimizer.currentRegime){
+      PLUGINS.regimeOptimizer.currentRegime=newRegime;SIM.objective=newRegime;el('objectiveSel').value=newRegime;
+      const tw=getTargetWeights(newRegime);
+      executeRebalance(tw.w,'Regime shift -> '+newRegime.toUpperCase()+' (vol '+annVol.toFixed(1)+'%)');
+      plog('Regime Optimizer','Vol regime changed — switched objective to '+newRegime.toUpperCase(),'var(--acc)');
+    }
+  }
+
+  if(PLUGINS.correlationMonitor.enabled&&SIM.day-PLUGINS.correlationMonitor.lastCheck>=PLUGINS.correlationMonitor.checkEvery){
+    PLUGINS.correlationMonitor.lastCheck=SIM.day;
+    PLUGINS.correlationMonitor.avgCorr=Math.max(0.1,Math.min(0.92,PLUGINS.correlationMonitor.avgCorr+(Math.random()-0.5)*0.10));
+    const ac=PLUGINS.correlationMonitor.avgCorr;
+    el('pst-corr').textContent='Avg pairwise correlation: '+(ac*100).toFixed(0)+'%';
+    if(ac*100>=PLUGINS.correlationMonitor.spikeThreshold){
+      plog('Correlation Monitor','⚠ Correlation spike to '+(ac*100).toFixed(0)+'% — diversification breaking down','var(--warn)');
+    }
+  }
+
+  if(PLUGINS.taxLossHarvester.enabled){
+    UNIVERSE.forEach(a=>{
+      const basis=PLUGINS.taxLossHarvester.costBasis[a.sym]??a.basePrice;
+      const lossPct=(a.price/basis-1)*100;
+      if(lossPct<=-Math.abs(PLUGINS.taxLossHarvester.lossThreshold)&&a.shares>0){
+        const lossValue=a.shares*(basis-a.price);
+        const taxBenefit=lossValue*(PLUGINS.taxLossHarvester.taxRate/100);
+        PLUGINS.taxLossHarvester.totalHarvested+=taxBenefit;
+        PLUGINS.taxLossHarvester.costBasis[a.sym]=a.price;
+        plog('Tax-Loss Harvester','Harvested '+a.sym+' loss -> ~'+fmtUSD(taxBenefit)+' tax benefit','var(--gold)');
+      }
+    });
+    el('pst-tax').textContent='Lifetime tax alpha: '+fmtUSD(PLUGINS.taxLossHarvester.totalHarvested);
+  }
+
+  if(PLUGINS.constraintEnforcer.enabled){
+    let outOfBand=false;
+    UNIVERSE.forEach(a=>{const w=(a.shares*a.price)/nav*100;if(w>PLUGINS.constraintEnforcer.maxWeight+.5||(w>0.5&&w<PLUGINS.constraintEnforcer.minWeight-.5))outOfBand=true});
+    el('pst-constraint').textContent=outOfBand?'⚠ Weights drifted outside band — will clip on next rebalance':'OK — all weights within band';
+  }
+
+  if(PLUGINS.aiPulse.enabled&&SIM.day-PLUGINS.aiPulse.lastPulse>=PLUGINS.aiPulse.interval&&SIM.day>5){
+    PLUGINS.aiPulse.lastPulse=SIM.day;el('pst-pulse').textContent='Last pulse: day '+SIM.day;
+    fireAIPulse();
+  }
+
+  el('pst-journal').textContent=PLUGINS.journal.log.length+' events logged';
+  el('pst-multi').textContent=UNIVERSE.length+' assets in universe';
+}
+
+async function fireAIPulse(){
+  const stats=computeRealizedStats();
+  const chat=el('aiChat');
+  const am=document.createElement('div');am.className='ai-msg ai';am.style.borderColor='var(--bdra)';
+  am.innerHTML='<div class="al" style="color:var(--purple)">⬡ AUTO-PULSE</div><div class="ac"></div>';
+  chat.appendChild(am);chat.scrollTop=chat.scrollHeight;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:80,messages:[{role:'user',content:`Portfolio co-pilot pulse. Day ${SIM.day}, objective ${SIM.objective}, NAV $${SIM.totalNAV.toFixed(0)}, annualized return ${stats.annRet.toFixed(1)}%, vol ${stats.annVol.toFixed(1)}%, Sharpe ${stats.sharpe.toFixed(2)}, drawdown ${SIM.mdd.toFixed(1)}%. ONE short sharp sentence (under 18 words) flagging the most notable thing right now. No preamble.`}]})});
+    const d=await res.json();const txt=d.content[0]?.text||'';
+    am.querySelector('.ac').textContent=txt;chat.scrollTop=chat.scrollHeight;
+  }catch(err){am.remove()}
+}
+
+function addAsset(){
+  if(!PLUGINS.multiAsset.enabled){alert('Enable the Multi-Asset Universe Manager toggle to add new assets.');return}
+  const sym=el('newAssetSym').value.trim().toUpperCase();
+  const name=el('newAssetName').value.trim()||sym;
+  const ret=parseFloat(el('newAssetRet').value)||10;
+  const vol=parseFloat(el('newAssetVol').value)||20;
+  const price=parseFloat(el('newAssetPrice').value)||100;
+  if(!sym){alert('Enter a ticker symbol.');return}
+  if(UNIVERSE.find(a=>a.sym===sym)){alert(sym+' is already in the universe.');return}
+  UNIVERSE.push({sym,name,expRet:ret,expVol:vol,price,basePrice:price,shares:0});
+  PLUGINS.taxLossHarvester.costBasis[sym]=price;
+  renderUniverseTable();
+  plog('Multi-Asset Manager','Added '+sym+' ('+name+') to universe','var(--acc)');
+  el('newAssetSym').value='';el('newAssetName').value='';
+}
+function removeAssetBySym(sym){
+  if(UNIVERSE.length<=2){alert('Need at least 2 assets in the universe.');return}
+  const a=UNIVERSE.find(x=>x.sym===sym);
+  if(a)SIM.cash+=a.shares*a.price;
+  UNIVERSE=UNIVERSE.filter(x=>x.sym!==sym);
+  delete targetWeights[sym];
+  renderUniverseTable();renderAllocation();
+  plog('Multi-Asset Manager','Removed '+sym+' — proceeds moved to cash','var(--t3)');
+}
+function setAssetParam(sym,key,val){const a=UNIVERSE.find(x=>x.sym===sym);if(a)a[key]=parseFloat(val)||a[key]}
+function loadPreset(){
+  if(SIM.running){alert('Stop the simulation before loading a preset.');return}
+  UNIVERSE=[
+    {sym:'AAPL',name:'Apple Inc.',expRet:12.5,expVol:22.3,price:185.40,basePrice:185.40,shares:0},
+    {sym:'MSFT',name:'Microsoft',expRet:11.8,expVol:19.7,price:420.30,basePrice:420.30,shares:0},
+    {sym:'GOOGL',name:'Alphabet',expRet:10.2,expVol:24.1,price:165.20,basePrice:165.20,shares:0},
+    {sym:'AMZN',name:'Amazon',expRet:13.1,expVol:27.5,price:185.00,basePrice:185.00,shares:0},
+    {sym:'NVDA',name:'NVIDIA',expRet:22.4,expVol:48.2,price:875.50,basePrice:875.50,shares:0},
+    {sym:'JPM',name:'JPMorgan',expRet:10.5,expVol:20.8,price:215.30,basePrice:215.30,shares:0},
+    {sym:'BRK.B',name:'Berkshire H.',expRet:9.1,expVol:16.3,price:455.20,basePrice:455.20,shares:0},
+  ];
+  targetWeights={};PLUGINS.taxLossHarvester.costBasis={};
+  UNIVERSE.forEach(a=>PLUGINS.taxLossHarvester.costBasis[a.sym]=a.price);
+  renderUniverseTable();
+  plog('System','Loaded diversified 7-asset preset universe','var(--acc)');
+}
+
+function renderUniverseTable(){
+  const nav=SIM.totalNAV||1;
+  el('universeTable').innerHTML=UNIVERSE.map(a=>{
+    const w=((a.shares*a.price)/nav*100)||0;
+    return`<div class="asset-row">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--acc)">${a.sym}</span>
+      <input type="number" value="${a.expRet}" step="0.1" onchange="setAssetParam('${a.sym}','expRet',this.value)">
+      <input type="number" value="${a.expVol}" step="0.1" onchange="setAssetParam('${a.sym}','expVol',this.value)">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t2);text-align:right">${w.toFixed(1)}%</span>
+      <button class="rm-btn" onclick="removeAssetBySym('${a.sym}')">×</button>
+    </div>`;
+  }).join('');
+  el('sb-uni').textContent=UNIVERSE.length+' assets';
+}
+function renderAllocation(){
+  const nav=SIM.totalNAV||1;
+  el('allocList').innerHTML=UNIVERSE.map((a,i)=>{
+    const curW=(a.shares*a.price)/nav*100;
+    const tgtW=(targetWeights[a.sym]||0)*100;
+    const drift=Math.abs(curW-tgtW);
+    const col=ALLOC_COLORS[i%ALLOC_COLORS.length];
+    const driftCol=drift>8?'var(--ng)':drift>4?'var(--warn)':'var(--t3)';
+    return`<div class="ar"><div class="as" style="color:${col}">${a.sym}</div><div class="ab"><div class="af" style="width:${Math.min(100,curW).toFixed(1)}%;background:${col}"></div></div><div class="ap">${curW.toFixed(1)}%</div></div>
+    <div class="drift-lbl" style="color:${driftCol}">target ${tgtW.toFixed(1)}%${drift>1?' · drift '+drift.toFixed(1)+'%':''}</div>`;
+  }).join('');
+}
+function renderEventFeed(){
+  const feed=PLUGINS.journal.log.slice(-12).reverse();
+  el('eventFeed').innerHTML=feed.length?feed.map(ev=>`<div class="log-row"><span class="log-time">D${ev.day}</span><span class="log-msg">${ev.event}</span></div>`).join(''):'<div style="color:var(--t3);font-size:9px;padding:8px 0;text-align:center">No rebalance events yet.</div>';
+}
+
+let activeChart='nav';
+function setChartTab(tab,btn){
+  activeChart=tab;
+  document.querySelectorAll('#chartTabs .tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');
+  const lbs={nav:'Portfolio NAV vs equal-weight benchmark',frontier:'Monte Carlo efficient frontier (1,500 sims)',risk:'Risk contribution per asset (approx.)'};
+  el('chartLbl').textContent=lbs[tab];
+  drawActiveChart();
+}
+function drawActiveChart(){
+  if(activeChart==='nav')drawNavChart();
+  else if(activeChart==='frontier')drawFrontierChart();
+  else drawRiskChart();
+}
+function drawNavChart(){
+  dc('mainChart',(ctx,W,H)=>{
+    const nav=SIM.navHist,bench=SIM.benchHist;const n=nav.length;if(n<2)return;
+    const all=[...nav,...bench];const mn=Math.min(...all)*0.98,mx=Math.max(...all)*1.02;
+    dg(ctx,W,H,mn,mx,v=>'$'+(v/1000).toFixed(0)+'K');
+    dl(ctx,bench,W,H,mn,mx,'#5A6B7A',1);
+    fa(ctx,nav,W,H,mn,mx,nav[n-1]>=nav[0]?'#10B981':'#FF3D57');
+    dl(ctx,nav,W,H,mn,mx,nav[n-1]>=nav[0]?'#10B981':'#FF3D57',1.8);
+  });
+}
+function drawFrontierChart(){
+  if(!SIM.efficientFrontier){dc('mainChart',(ctx,W,H)=>{ctx.fillStyle='#304A3C';ctx.font='10px JetBrains Mono';ctx.fillText('Run optimization to generate the efficient frontier.',10,20)});return}
+  dc('mainChart',(ctx,W,H)=>{
+    const sims=SIM.efficientFrontier.sims;
+    const vols=sims.map(s=>s.vol*100),rets=sims.map(s=>s.ret*100);
+    const mnV=Math.min(...vols)*.9,mxV=Math.max(...vols)*1.1;
+    const mnR=Math.min(...rets)-.5,mxR=Math.max(...rets)+.5;
+    const sx=v=>(v-mnV)/(mxV-mnV)*W;const sy=v=>H-(v-mnR)/(mxR-mnR)*H;
+    dg(ctx,W,H,mnR,mxR,v=>v.toFixed(1)+'%');
+    const shrs=sims.map(s=>s.shr);
+    sims.forEach(s=>{
+      const no=(s.shr-Math.min(...shrs))/(Math.max(...shrs)-Math.min(...shrs)||1);
+      ctx.beginPath();ctx.arc(sx(s.vol*100),sy(s.ret*100),1.5,0,Math.PI*2);
+      ctx.fillStyle=`rgba(${Math.floor(255*(1-no))},${Math.floor(200*no)},150,.4)`;ctx.fill();
+    });
+    const stats=computeRealizedStats();
+    if(SIM.navHist.length>2){
+      ctx.beginPath();ctx.arc(sx(stats.annVol),sy(stats.annRet),6,0,Math.PI*2);
+      ctx.fillStyle='#10B981';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();
+      ctx.fillStyle='#10B981';ctx.font='bold 9px JetBrains Mono';ctx.fillText('CURRENT',sx(stats.annVol)+9,sy(stats.annRet)+3);
+    }
+    UNIVERSE.forEach((a,i)=>{
+      ctx.beginPath();ctx.arc(sx(a.expVol),sy(a.expRet),4,0,Math.PI*2);
+      ctx.fillStyle=ALLOC_COLORS[i%ALLOC_COLORS.length];ctx.fill();
+      ctx.fillStyle=ALLOC_COLORS[i%ALLOC_COLORS.length];ctx.font='8px JetBrains Mono';ctx.fillText(a.sym,sx(a.expVol)+6,sy(a.expRet)-3);
+    });
+  });
+}
+function drawRiskChart(){
+  const{contributions}=computeRiskContributions();
+  dc('mainChart',(ctx,W,H)=>{
+    const n=contributions.length;if(!n)return;const bw=W/n*0.5;const bg=W/n;
+    const mx=Math.max(...contributions.map(c=>c.pct),10)*1.2;
+    dg(ctx,W,H,0,mx,v=>v.toFixed(0)+'%');
+    contributions.forEach((c,i)=>{
+      const x=i*bg+bg/2-bw/2;const h=(c.pct/mx)*(H-20);const y=H-h;
+      const col=ALLOC_COLORS[i%ALLOC_COLORS.length];
+      ctx.fillStyle=col;ctx.fillRect(x,y,bw,h);
+      ctx.fillStyle=col;ctx.font='bold 9px JetBrains Mono';ctx.textAlign='center';
+      ctx.fillText(c.pct.toFixed(1)+'%',x+bw/2,y-4);
+      ctx.fillStyle='#3A4A5C';ctx.font='8px JetBrains Mono';ctx.fillText(c.sym,x+bw/2,H-3);
+      ctx.textAlign='left';
+    });
+  });
+}
+
+function updateUI(){
+  const stats=computeRealizedStats();
+  const todayChg=SIM.navHist.length>1?(SIM.navHist[SIM.navHist.length-1]/SIM.navHist[SIM.navHist.length-2]-1)*100:0;
+  el('tb-nav').textContent=fmtUSD(SIM.totalNAV);
+  el('tb-day').textContent=SIM.day;
+  el('tb-today').textContent=(todayChg>=0?'+':'')+todayChg.toFixed(2)+'%';
+  el('tb-today').className='ts-v '+(todayChg>=0?'ok':'ng');
+  el('tb-sharpe').textContent=stats.sharpe.toFixed(2);
+  el('tb-obj').textContent=SIM.objective==='sharpe'?'MAX SHARPE':SIM.objective==='minvol'?'MIN VOLATILITY':SIM.objective==='riskparity'?'RISK PARITY':'EQUAL WEIGHT';
+
+  el('s-nav').textContent=fmtUSD(SIM.totalNAV);
+  el('s-totalret').textContent=((SIM.totalNAV/SIM.navHist[0]-1)*100).toFixed(2)+'%';
+  el('s-annret').textContent=stats.annRet.toFixed(2)+'%';
+  el('s-annvol').textContent=stats.annVol.toFixed(2)+'%';
+  el('s-sharpe').textContent=stats.sharpe.toFixed(2);
+  el('s-mdd').textContent=SIM.mdd.toFixed(2)+'%';
+  el('s-rebal').textContent=SIM.rebalances;
+  el('s-day').textContent=SIM.day;
+
+  renderUniverseTable();renderAllocation();renderEventFeed();drawActiveChart();
+}
+
+function step(){
+  if(!SIM.running)return;
+  SIM.day++;
+  UNIVERSE.forEach(a=>{
+    const muD=(a.expRet/100)/252,sgD=(a.expVol/100)/Math.sqrt(252);
+    const r=muD-0.5*sgD*sgD+sgD*nr();
+    a.price=Math.max(0.5,+(a.price*Math.exp(r)).toFixed(4));
+  });
+  SIM.totalNAV=computeNAV();
+  SIM.navHist.push(SIM.totalNAV);if(SIM.navHist.length>500)SIM.navHist.shift();
+  const bNav=computeBenchNAV();
+  SIM.benchHist.push(bNav);if(SIM.benchHist.length>500)SIM.benchHist.shift();
+  SIM.peakNAV=Math.max(SIM.peakNAV,SIM.totalNAV);
+  SIM.mdd=Math.min(SIM.mdd,(SIM.totalNAV-SIM.peakNAV)/SIM.peakNAV*100);
+
+  runPlugins();
+  if(!SIM.running)return;
+
+  updateUI();
+  if(SIM.running)SIM.timer=setTimeout(step,SIM.speed);
+}
+
+function toggleSim(){
+  SIM.running=!SIM.running;
+  const btn=el('mainBtn');
+  if(SIM.running){
+    btn.textContent='⏹ STOP';btn.className='ctrl-btn stop';
+    el('mktStatus').textContent='SIMULATING';el('mktDot').className='mbdot open';
+    el('simBadge').textContent='LIVE';el('simBadge').className='pbadge live';
+    if(SIM.rebalances===0)runOptimizationNow(true);
+    if(!SIM.benchInitialized){initBenchmark();SIM.benchInitialized=true}
+    step();
+  }else{
+    btn.textContent='▶ START';btn.className='ctrl-btn run';
+    el('mktStatus').textContent='PAUSED';el('mktDot').className='mbdot closed';
+    el('simBadge').textContent='IDLE';el('simBadge').className='pbadge idle';
+    clearTimeout(SIM.timer);
+  }
+}
+function setSpeed(v){SIM.speed=parseInt(v)}
+function resetSim(){
+  SIM.running=false;clearTimeout(SIM.timer);
+  el('mainBtn').textContent='▶ START';el('mainBtn').className='ctrl-btn run';
+  el('mktStatus').textContent='IDLE';el('mktDot').className='mbdot closed';
+  el('simBadge').textContent='IDLE';el('simBadge').className='pbadge idle';
+  UNIVERSE.forEach(a=>{a.price=a.basePrice;a.shares=0});
+  Object.assign(SIM,{day:0,cash:1000000,totalNAV:1000000,navHist:[1000000],benchHist:[1000000],peakNAV:1000000,mdd:0,rebalances:0,lastRebalDay:0,efficientFrontier:null,benchInitialized:false});
+  targetWeights={};
+  PLUGINS.journal.log=[];PLUGINS.taxLossHarvester.totalHarvested=0;
+  UNIVERSE.forEach(a=>PLUGINS.taxLossHarvester.costBasis[a.sym]=a.price);
+  PLUGINS.drawdownGuardian.tripped=false;PLUGINS.drawdownGuardian.cooldown=0;
+  PLUGINS.autoRebalancer.lastCheck=0;PLUGINS.regimeOptimizer.lastCheck=0;PLUGINS.correlationMonitor.lastCheck=0;PLUGINS.aiPulse.lastPulse=0;
+  el('activityLog').innerHTML='';
+  updateUI();
+  plog('System','Simulation reset','var(--t3)');
+}
+
+async function aiSend(){
+  const q=el('aiInp').value.trim();if(!q)return;el('aiInp').value='';
+  const chat=el('aiChat');
+  const um=document.createElement('div');um.className='ai-msg';um.style.cssText='background:var(--accd);border:1px solid var(--bdra);color:var(--t1);font-family:"JetBrains Mono",monospace;font-size:9px;padding:7px 9px;border-radius:3px;align-self:flex-end;max-width:95%;white-space:pre-wrap';um.textContent=q;chat.appendChild(um);
+  const am=document.createElement('div');am.className='ai-msg ai';am.innerHTML='<div class="al">⬡ PORTFOLIO AI</div><div class="ac"></div>';chat.appendChild(am);
+  chat.scrollTop=chat.scrollHeight;
+
+  const stats=computeRealizedStats();const nav=SIM.totalNAV;
+  const weightsStr=UNIVERSE.map(a=>`${a.sym}:${((a.shares*a.price)/nav*100).toFixed(1)}%`).join(', ');
+  const activePlugins=Object.entries(PLUGINS).filter(([k,v])=>v.enabled).map(([k])=>PLUGIN_NAMES[k]).join(', ')||'None';
+  const context=`You are a CFA charterholder and senior portfolio manager specializing in Modern Portfolio Theory, factor allocation, and systematic rebalancing. Current live simulation state:
+Objective: ${SIM.objective.toUpperCase()} | Day: ${SIM.day} | NAV: ${fmtUSD(nav)}
+Total Return: ${((nav/SIM.navHist[0]-1)*100).toFixed(2)}% | Annualized Return: ${stats.annRet.toFixed(2)}% | Realized Vol: ${stats.annVol.toFixed(2)}% | Sharpe: ${stats.sharpe.toFixed(2)}
+Max Drawdown: ${SIM.mdd.toFixed(2)}% | Rebalances: ${SIM.rebalances} | Risk-Free Rate: ${SIM.rfRate}%
+Current Weights: ${weightsStr}
+Active Automation Plugins: ${activePlugins}
+
+User question: ${q}`;
+  SIM.aiHistory.push({role:'user',content:context});
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:SIM.aiHistory})});
+    const d=await res.json();const txt=d.content[0]?.text||'Analysis unavailable.';
+    SIM.aiHistory.push({role:'assistant',content:txt});
+    const ac=am.querySelector('.ac');let i=0;const t=()=>{if(i<txt.length){ac.textContent+=txt[i++];chat.scrollTop=chat.scrollHeight;setTimeout(t,6)}};t();
+  }catch(err){am.querySelector('.ac').textContent='Connection error. Check API.'}
+}
+function aiQ(p){el('aiInp').value=p;aiSend()}
+
+window.addEventListener('resize',()=>drawActiveChart());
+
+renderUniverseTable();renderAllocation();updateUI();updatePluginCount();
+</script>
+</body>
+</html>

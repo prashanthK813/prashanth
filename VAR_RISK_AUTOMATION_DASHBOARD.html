@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuantDesk · VaR Risk Automation</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap');
+:root{
+  --bg:#0C0705;--bg2:#140D09;--bg3:#1A120C;--bg4:#1F1610;
+  --bdr:#2A1D14;--bdr2:#3D2A1C;--t1:#F2E8DE;--t2:#A08870;--t3:#5C4A3A;
+  --acc:#FF6B35;--accd:rgba(255,107,53,.12);--bdra:rgba(255,107,53,.3);
+  --gold:#F0B429;--ok:#00E896;--ng:#FF3D57;--warn:#F59E0B;--purple:#A855F7;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
+::-webkit-scrollbar{width:2px;height:2px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:2px}
+
+.topbar{display:flex;align-items:center;height:42px;padding:0 16px;background:var(--bg2);border-bottom:1px solid var(--bdr);flex-shrink:0;gap:0}
+.logo{display:flex;align-items:center;gap:8px;padding-right:18px;border-right:1px solid var(--bdr);margin-right:18px}
+.logo-icon{width:26px;height:26px;border:1.5px solid var(--acc);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--acc)}
+.logo-text{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--t1)}
+.logo-sub{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:1px}
+.ticker-strip{display:flex;align-items:center;gap:20px;flex:1}
+.ts-item{display:flex;flex-direction:column;gap:1px}
+.ts-l{font-size:7px;color:var(--t3);letter-spacing:1px;font-family:'JetBrains Mono',monospace;text-transform:uppercase}
+.ts-v{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--t1)}
+.ts-v.acc{color:var(--acc)}.ts-v.gold{color:var(--gold)}.ts-v.ok{color:var(--ok)}.ts-v.ng{color:var(--ng)}
+.topbar-right{display:flex;align-items:center;gap:12px;padding-left:16px;border-left:1px solid var(--bdr);margin-left:auto}
+.market-badge{display:flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px}
+.mbdot{width:6px;height:6px;border-radius:50%}
+.mbdot.open{background:var(--ok);box-shadow:0 0 6px var(--ok);animation:glow 2s infinite}
+@keyframes glow{0%,100%{opacity:1}50%{opacity:.5}}
+.mbdot.closed{background:var(--t3)}
+.clk{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t2);letter-spacing:1px}
+.ctrl-btn{background:transparent;border:1px solid var(--bdr2);color:var(--t2);padding:5px 12px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;border-radius:3px;cursor:pointer;transition:all .15s;text-transform:uppercase;position:relative}
+.ctrl-btn:hover{border-color:var(--acc);color:var(--acc)}
+.ctrl-btn.run{background:var(--ok);color:#08120D;border-color:var(--ok);font-weight:700}
+.ctrl-btn.run:hover{opacity:.85}
+.ctrl-btn.stop{background:var(--ng);color:#fff;border-color:var(--ng);font-weight:700}
+.speed-select{background:var(--bg4);border:1px solid var(--bdr2);color:var(--t1);padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:9px;border-radius:3px;outline:none;cursor:pointer}
+#pluginCount{position:absolute;top:-7px;right:-7px;background:var(--acc);color:#1A0A02;font-size:7px;line-height:1;padding:2px 4px;border-radius:8px;font-weight:700}
+
+.body{display:grid;grid-template-columns:220px 1fr 195px 260px;grid-template-rows:1fr;flex:1;overflow:hidden;gap:0}
+.panel{border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden}
+.phead{padding:7px 12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg2)}
+.ptitle{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--acc)}
+.pbadge{font-family:'JetBrains Mono',monospace;font-size:7px;padding:2px 6px;border-radius:2px;letter-spacing:1px;text-transform:uppercase}
+.pbadge.live{background:rgba(0,232,150,.15);color:var(--ok);border:1px solid rgba(0,232,150,.3)}
+.pbadge.idle{background:var(--bg4);color:var(--t3);border:1px solid var(--bdr)}
+.pbadge.zone-green{background:rgba(0,232,150,.15);color:var(--ok);border:1px solid rgba(0,232,150,.3)}
+.pbadge.zone-yellow{background:rgba(240,180,41,.15);color:var(--gold);border:1px solid rgba(240,180,41,.3)}
+.pbadge.zone-red{background:rgba(255,61,87,.15);color:var(--ng);border:1px solid rgba(255,61,87,.3)}
+
+.left-panel{padding:10px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1}
+.sec-title{font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--t3);padding-bottom:5px;border-bottom:1px solid var(--bdr)}
+.cg{display:flex;flex-direction:column;gap:4px}
+.cl{font-size:8px;color:var(--t2);letter-spacing:1px;text-transform:uppercase}
+input,select{background:var(--bg4);border:1px solid var(--bdr2);color:var(--t1);padding:5px 8px;font-family:'JetBrains Mono',monospace;font-size:11px;border-radius:3px;outline:none;width:100%;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--acc)}
+select option{background:var(--bg3)}
+.bp{background:var(--acc);color:#1A0A02;border:none;padding:7px 10px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1px;border-radius:3px;cursor:pointer;width:100%;text-transform:uppercase;transition:opacity .2s}
+.bp:hover{opacity:.85}
+.bs{background:transparent;color:var(--acc);border:1px solid var(--bdra);padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;border-radius:3px;cursor:pointer;width:100%;text-transform:uppercase;transition:background .2s}
+.bs:hover{background:var(--accd)}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.stat{background:var(--bg3);border:1px solid var(--bdr);border-radius:3px;padding:7px 8px}
+.stat-l{font-size:7px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;font-family:'JetBrains Mono',monospace}
+.stat-v{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;color:var(--t1)}
+.v-ok{color:var(--ok)}.v-ng{color:var(--ng)}.v-acc{color:var(--acc)}.v-gold{color:var(--gold)}.v-warn{color:var(--warn)}
+
+.center-panel{display:flex;flex-direction:column;overflow:hidden;grid-column:2}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--bdr);flex-shrink:0}
+.tabs{display:flex;gap:4px}
+.tab{font-size:8px;font-family:'JetBrains Mono',monospace;color:var(--t2);padding:4px 9px;border:1px solid var(--bdr);border-radius:3px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all .15s}
+.tab.active{color:var(--acc);border-color:var(--bdra);background:var(--accd)}
+.cb{flex:1;padding:10px;position:relative;min-height:0}
+canvas{display:block;width:100%!important;height:100%!important}
+.chart-foot{display:flex;align-items:center;gap:12px;padding:5px 12px;border-top:1px solid var(--bdr);flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3)}
+
+.alloc-panel{display:flex;flex-direction:column;overflow:hidden}
+.event-feed{flex:1;overflow-y:auto;padding:8px 10px}
+.log-row{display:grid;grid-template-columns:32px 1fr;gap:6px;font-family:'JetBrains Mono',monospace;font-size:8px;padding:4px 6px;border-left:2px solid var(--bdr2);background:var(--bg3);border-radius:0 3px 3px 0;margin-bottom:3px}
+.log-time{color:var(--t3)}
+.log-msg{color:var(--t2)}
+
+.ai-area{display:flex;flex-direction:column;overflow:hidden}
+.ai-chat{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:7px}
+.ai-msg{padding:8px 10px;border-radius:3px;font-size:10px;line-height:1.7}
+.ai-msg.ai{background:var(--bg3);border:1px solid var(--bdr);color:var(--t2);white-space:pre-wrap}
+.ai-msg.ai .al{font-size:7px;color:var(--acc);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:4px}
+.ai-input-row{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--bdr);flex-shrink:0}
+.ai-input-row input{flex:1;font-size:10px;padding:5px 8px}
+.ai-send{background:var(--acc);color:#1A0A02;border:none;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;border-radius:3px;cursor:pointer;letter-spacing:1px;flex-shrink:0}
+.qp-btn{background:transparent;border:1px solid var(--bdr);color:var(--t2);padding:4px 7px;font-family:'JetBrains Mono',monospace;font-size:8px;border-radius:3px;cursor:pointer;text-align:left;transition:all .15s;width:100%;margin-bottom:3px;letter-spacing:.5px}
+.qp-btn:hover{border-color:var(--bdra);color:var(--acc);background:var(--accd)}
+
+.statusbar{display:flex;align-items:center;gap:16px;padding:4px 16px;background:var(--bg2);border-top:1px solid var(--bdr);font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3);flex-shrink:0}
+.sb-sep{color:var(--bdr2)}
+
+.plugins-backdrop{position:fixed;inset:42px 0 0 0;background:rgba(0,0,0,.55);z-index:65;opacity:0;pointer-events:none;transition:opacity .2s}
+.plugins-backdrop.show{opacity:1;pointer-events:auto}
+.plugins-drawer{position:fixed;top:42px;right:0;bottom:0;width:380px;background:var(--bg);border-left:1px solid var(--bdr2);z-index:70;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;box-shadow:-10px 0 28px rgba(0,0,0,.5)}
+.plugins-drawer.open{transform:translateX(0)}
+.drawer-header{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--bdr);flex-shrink:0;background:var(--bg2)}
+.drawer-close{background:transparent;border:1px solid var(--bdr2);color:var(--t2);width:22px;height:22px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1}
+.drawer-close:hover{color:var(--ng);border-color:var(--ng)}
+.drawer-body{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+.drawer-sub{font-size:9px;color:var(--t3);line-height:1.6;margin-bottom:2px}
+.pcard{border:1px solid var(--bdr);border-radius:4px;padding:10px;background:var(--bg3);transition:border-color .2s}
+.pcard.active{border-color:var(--bdra)}
+.pcard-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.pcard-name{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--t1)}
+.pcard-desc{font-size:9px;color:var(--t2);margin-top:3px;line-height:1.5}
+.pcard-params{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.pcard-params input{font-size:10px;padding:4px 6px}
+.pcard-status{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3);margin-top:7px;padding-top:6px;border-top:1px solid var(--bdr)}
+.pcard-btn{width:100%;margin-top:7px;background:var(--accd);border:1px solid var(--bdra);color:var(--acc);padding:5px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:9px;cursor:pointer;letter-spacing:1px;text-transform:uppercase}
+.pcard-btn:hover{background:rgba(255,107,53,.22)}
+.tgl{width:32px;height:18px;border-radius:9px;background:var(--bdr2);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;margin-top:1px}
+.tgl::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--t2);transition:all .2s}
+.tgl.on{background:rgba(0,232,150,.35)}
+.tgl.on::after{left:16px;background:var(--ok)}
+.activity-log{display:flex;flex-direction:column;gap:3px;max-height:170px;overflow-y:auto}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-icon">⚠</div>
+    <div><div class="logo-text">VaR RISK ENGINE</div><div class="logo-sub">AUTOMATED MARKET RISK DESK</div></div>
+  </div>
+  <div class="ticker-strip">
+    <div class="ts-item"><div class="ts-l">Portfolio</div><div class="ts-v acc" id="tb-pv">$10,000,000</div></div>
+    <div class="ts-item"><div class="ts-l">Day</div><div class="ts-v" id="tb-day">0</div></div>
+    <div class="ts-item"><div class="ts-l">VaR (Param.)</div><div class="ts-v ng" id="tb-var">-</div></div>
+    <div class="ts-item"><div class="ts-l">Vol Regime</div><div class="ts-v gold" id="tb-regime">NORMAL</div></div>
+    <div class="ts-item"><div class="ts-l">Basel Zone</div><div class="ts-v ok" id="tb-zone">GREEN</div></div>
+  </div>
+  <div class="topbar-right">
+    <div class="market-badge">
+      <div class="mbdot closed" id="mktDot"></div>
+      <span style="color:var(--t2)" id="mktStatus">IDLE</span>
+    </div>
+    <select class="speed-select" id="speedSel" onchange="setSpeed(this.value)">
+      <option value="300">1× SPEED</option>
+      <option value="150" selected>2× SPEED</option>
+      <option value="60">5× SPEED</option>
+      <option value="20">15× SPEED</option>
+    </select>
+    <button class="ctrl-btn run" id="mainBtn" onclick="toggleSim()">▶ START</button>
+    <button class="ctrl-btn" onclick="resetSim()">↺ RESET</button>
+    <button class="ctrl-btn" id="pluginsBtn" onclick="openDrawer()">⚙ PLUGINS<span id="pluginCount">0</span></button>
+    <div class="clk" id="clk">--:--:--</div>
+  </div>
+</div>
+
+<div class="body">
+
+<div class="panel">
+  <div class="phead">
+    <div class="ptitle">Risk Parameters</div>
+    <div class="pbadge idle" id="simBadge">IDLE</div>
+  </div>
+  <div class="left-panel">
+    <div class="cg"><div class="cl">Portfolio Value ($)</div><input id="pvInput" value="10000000" type="number" onchange="SIM.portfolioValue=+this.value||SIM.portfolioValue"></div>
+    <div class="cg"><div class="cl">Confidence Level</div>
+      <select id="clSelect" onchange="SIM.confidenceLevel=+this.value">
+        <option value="95" selected>95%</option>
+        <option value="99">99%</option>
+      </select>
+    </div>
+    <div class="cg"><div class="cl">Holding Period (days)</div><input id="hpInput" value="1" type="number" min="1" onchange="SIM.holdingPeriod=+this.value||1"></div>
+    <div class="cg"><div class="cl">Baseline Daily Vol (%)</div><input id="volInput" value="1.2" type="number" step="0.1" onchange="SIM.baseVol=+this.value/100||SIM.baseVol"></div>
+
+    <div class="sec-title" style="margin-top:4px">VaR Estimates</div>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-l">Parametric</div><div class="stat-v v-ng" id="s-pvar">-</div></div>
+      <div class="stat"><div class="stat-l">Historical</div><div class="stat-v v-warn" id="s-hvar">-</div></div>
+      <div class="stat"><div class="stat-l">Monte Carlo</div><div class="stat-v v-gold" id="s-mvar">-</div></div>
+      <div class="stat"><div class="stat-l">Exp. Shortfall</div><div class="stat-v v-ng" id="s-es">-</div></div>
+    </div>
+
+    <div class="sec-title" style="margin-top:4px">Live Risk State</div>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-l">Ann. Vol</div><div class="stat-v v-acc" id="s-vol">-</div></div>
+      <div class="stat"><div class="stat-l">Exposure</div><div class="stat-v" id="s-exposure">100%</div></div>
+      <div class="stat"><div class="stat-l">Exceptions</div><div class="stat-v" id="s-exceptions">0</div></div>
+      <div class="stat"><div class="stat-l">Cap. Charge</div><div class="stat-v v-gold" id="s-capcharge">-</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="center-panel">
+  <div class="ch">
+    <div class="tabs" id="chartTabs">
+      <div class="tab active" onclick="setChartTab('dist',this)">P&amp;L Distribution</div>
+      <div class="tab" onclick="setChartTab('backtest',this)">VaR Backtest</div>
+      <div class="tab" onclick="setChartTab('stress',this)">Stress Scenarios</div>
+    </div>
+    <span style="font-size:8px;color:var(--t2);font-family:'JetBrains Mono',monospace" id="chartLbl">Daily P&L distribution with VaR threshold</span>
+  </div>
+  <div class="cb"><canvas id="mainChart"></canvas></div>
+  <div class="chart-foot">
+    <span style="color:var(--ng)">●</span><span>Loss</span>
+    <span style="color:var(--ok)">●</span><span>Gain</span>
+    <span style="margin-left:auto">MODEL: GARCH(1,1) VOL CLUSTERING · BASEL III TRAFFIC-LIGHT BACKTESTING (SIMPLIFIED)</span>
+  </div>
+</div>
+
+<div class="panel alloc-panel">
+  <div class="phead">
+    <div class="ptitle">Risk Alerts</div>
+  </div>
+  <div class="event-feed" id="eventFeed"></div>
+</div>
+
+<div class="panel ai-area" style="border-right:none">
+  <div class="phead">
+    <div class="ptitle">AI Risk Analyst · Claude</div>
+    <div class="pbadge live">POWERED</div>
+  </div>
+  <div style="padding:8px 10px;border-bottom:1px solid var(--bdr);flex-shrink:0;display:flex;flex-direction:column;gap:3px">
+    <button class="qp-btn" onclick="aiQ('Assess my current risk profile: is my VaR appropriate for the realized volatility regime? What explains the gap between my parametric, historical, and Monte Carlo estimates?')">📊 Risk Profile Assessment</button>
+    <button class="qp-btn" onclick="aiQ('Walk me through my current Basel traffic-light zone and exception count. What does this mean for my capital charge and model credibility?')">🏛 Basel Zone Explainer</button>
+    <button class="qp-btn" onclick="aiQ('Which stress scenario poses the biggest threat to my book right now, and what hedge would most efficiently reduce that tail exposure?')">⚡ Worst-Case Scenario</button>
+    <button class="qp-btn" onclick="aiQ('Should I be de-risking right now given current volatility and tail risk signals? Give me a clear recommendation.')">🛡 De-Risk Recommendation</button>
+  </div>
+  <div class="ai-chat" id="aiChat">
+    <div class="ai-msg ai"><div class="al">⬡ RISK AI</div>I'm monitoring your live risk simulation. Press START and I'll track VaR, volatility regime, Basel exceptions, and tail risk in real time. Use the quick prompts above or ask me anything about the book's risk profile.</div>
+  </div>
+  <div class="ai-input-row">
+    <input id="aiInp" placeholder="Ask about VaR, capital, stress tests..." onkeydown="if(event.key==='Enter')aiSend()">
+    <button class="ai-send" onclick="aiSend()">SEND</button>
+  </div>
+</div>
+
+</div>
+
+<div class="statusbar">
+  <span style="color:var(--t3)">ENGINE</span><span style="color:var(--t2)">GARCH(1,1) VOLATILITY CLUSTERING</span>
+  <span class="sb-sep">|</span>
+  <span style="color:var(--t3)">VaR METHODS</span><span style="color:var(--t2)">PARAMETRIC · HISTORICAL · MONTE CARLO 5,000</span>
+  <span class="sb-sep">|</span>
+  <span style="color:var(--t3)">REGULATORY</span><span style="color:var(--t2)">BASEL III TRAFFIC-LIGHT (SIMPLIFIED)</span>
+  <span style="margin-left:auto;color:var(--t3)">AI</span><span style="color:var(--acc)">CLAUDE SONNET</span>
+  <span class="sb-sep">|</span>
+  <span style="color:var(--ng)">⚠ SIMULATION ONLY — NOT FINANCIAL ADVICE</span>
+</div>
+
+<div class="plugins-backdrop" id="pluginsBackdrop" onclick="closeDrawer()"></div>
+<div class="plugins-drawer" id="pluginsDrawer">
+  <div class="drawer-header">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--acc)">⚙ AUTOMATION PLUGINS</div>
+    <button class="drawer-close" onclick="closeDrawer()">×</button>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-sub">9 autonomous risk-management modules running inside the live simulation loop. Enable any combination — each acts independently once toggled on.</div>
+
+    <div class="pcard" id="pc-limitMonitor">
+      <div class="pcard-head">
+        <div><div class="pcard-name">🚨 VaR Limit Monitor</div><div class="pcard-desc">Continuously checks current VaR as a % of portfolio against your desk risk limit and fires an alert on breach.</div></div>
+        <div class="tgl" onclick="togglePlugin('limitMonitor',this)"></div>
+      </div>
+      <div class="pcard-params">
+        <div class="cg"><div class="cl">VaR Limit (%)</div><input type="number" value="2.5" step="0.1" onchange="PLUGINS.limitMonitor.limitPct=+this.value"></div>
+        <div class="cg"><div class="cl">Check Every (days)</div><input type="number" value="3" onchange="PLUGINS.limitMonitor.checkEvery=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-limit">Idle — not monitoring</div>
+    </div>
+
+    <div class="pcard" id="pc-autoDeRisk">
+      <div class="pcard-head">
+        <div><div class="pcard-name">🛡 Auto De-Risk Engine</div><div class="pcard-desc">Automatically trims effective exposure when VaR breaches the trigger, then slowly rebuilds risk once conditions normalize.</div></div>
+        <div class="tgl" onclick="togglePlugin('autoDeRisk',this)"></div>
+      </div>
+      <div class="pcard-params">
+        <div class="cg"><div class="cl">Trigger VaR (%)</div><input type="number" value="3.5" step="0.1" onchange="PLUGINS.autoDeRisk.triggerPct=+this.value"></div>
+        <div class="cg"><div class="cl">Reduce Exposure By (%)</div><input type="number" value="25" onchange="PLUGINS.autoDeRisk.reduceBy=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-derisk">Exposure: 100% of full size</div>
+    </div>
+
+    <div class="pcard" id="pc-modelRecon">
+      <div class="pcard-head">
+        <div><div class="pcard-name">📐 Model Reconciliation Engine</div><div class="pcard-desc">Compares Parametric vs Historical VaR and flags significant divergence — a classic model-risk early warning.</div></div>
+        <div class="tgl" onclick="togglePlugin('modelRecon',this)"></div>
+      </div>
+      <div class="pcard-params">
+        <div class="cg"><div class="cl">Check Every (days)</div><input type="number" value="5" onchange="PLUGINS.modelRecon.checkEvery=+this.value"></div>
+        <div class="cg"><div class="cl">Divergence Trigger (%)</div><input type="number" value="25" onchange="PLUGINS.modelRecon.threshold=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-recon">Idle — not monitoring</div>
+    </div>
+
+    <div class="pcard" id="pc-stressTest">
+      <div class="pcard-head">
+        <div><div class="pcard-name">⚡ Stress Test Scheduler</div><div class="pcard-desc">Periodically reruns 2008 GFC, COVID Crash, Black Monday, and Rate Shock scenarios against the current book.</div></div>
+        <div class="tgl" onclick="togglePlugin('stressTest',this)"></div>
+      </div>
+      <div class="pcard-params" style="grid-template-columns:1fr">
+        <div class="cg"><div class="cl">Run Every (days)</div><input type="number" value="10" onchange="PLUGINS.stressTest.checkEvery=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-stress">Idle — not scheduled</div>
+    </div>
+
+    <div class="pcard" id="pc-volRegime">
+      <div class="pcard-head">
+        <div><div class="pcard-name">📈 Volatility Regime Detector</div><div class="pcard-desc">Classifies realized annualized volatility into LOW / NORMAL / ELEVATED / CRISIS and logs regime changes.</div></div>
+        <div class="tgl" onclick="togglePlugin('volRegime',this)"></div>
+      </div>
+      <div class="pcard-params" style="grid-template-columns:1fr">
+        <div class="cg"><div class="cl">Check Every (days)</div><input type="number" value="5" onchange="PLUGINS.volRegime.checkEvery=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-vol">Idle — not monitoring</div>
+    </div>
+
+    <div class="pcard" id="pc-baselCapital">
+      <div class="pcard-head">
+        <div><div class="pcard-name">🏛 Basel III Capital Engine</div><div class="pcard-desc">Tracks trailing VaR exceptions, classifies Green/Yellow/Red traffic-light zone, and computes the regulatory capital charge.</div></div>
+        <div class="tgl" onclick="togglePlugin('baselCapital',this)"></div>
+      </div>
+      <div class="pcard-status" id="pst-basel">Idle — not monitoring</div>
+    </div>
+
+    <div class="pcard" id="pc-tailRisk">
+      <div class="pcard-head">
+        <div><div class="pcard-name">🔔 Tail Risk Monitor</div><div class="pcard-desc">Tracks excess kurtosis of returns and flags when fat tails mean parametric VaR is understating true risk.</div></div>
+        <div class="tgl" onclick="togglePlugin('tailRisk',this)"></div>
+      </div>
+      <div class="pcard-params">
+        <div class="cg"><div class="cl">Check Every (days)</div><input type="number" value="10" onchange="PLUGINS.tailRisk.checkEvery=+this.value"></div>
+        <div class="cg"><div class="cl">Kurtosis Trigger</div><input type="number" value="1.5" step="0.1" onchange="PLUGINS.tailRisk.threshold=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-tail">Idle — not monitoring</div>
+    </div>
+
+    <div class="pcard" id="pc-aiPulse">
+      <div class="pcard-head">
+        <div><div class="pcard-name">⬡ AI Co-Pilot Pulse</div><div class="pcard-desc">Claude auto-narrates the risk book every N days — no prompting needed, posts straight into the chat.</div></div>
+        <div class="tgl" onclick="togglePlugin('aiPulse',this)"></div>
+      </div>
+      <div class="pcard-params" style="grid-template-columns:1fr">
+        <div class="cg"><div class="cl">Pulse Every (days)</div><input type="number" value="20" onchange="PLUGINS.aiPulse.interval=+this.value"></div>
+      </div>
+      <div class="pcard-status" id="pst-pulse">Idle — not pulsing</div>
+    </div>
+
+    <div class="pcard active" id="pc-journal">
+      <div class="pcard-head">
+        <div><div class="pcard-name">📓 Risk Journal</div><div class="pcard-desc">Silently logs every alert and automation event in the background. Export the full session anytime as CSV.</div></div>
+        <div class="tgl on" onclick="togglePlugin('journal',this)"></div>
+      </div>
+      <div class="pcard-status" id="pst-journal">0 events logged</div>
+      <button class="pcard-btn" onclick="exportJournal()">⬇ Export CSV</button>
+    </div>
+
+    <div class="drawer-sub" style="margin-top:2px;border-top:1px solid var(--bdr);padding-top:9px">Automation Activity Log</div>
+    <div class="activity-log" id="activityLog"></div>
+  </div>
+</div>
+
+<script>
+const el=id=>document.getElementById(id);
+const nr=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+const fmtUSD=n=>(n>=0?'$':'-$')+Math.abs(Math.round(n)).toLocaleString('en-US');
+const normInv=p=>{const c=[.3374754822726147,.9761690190917186,.1607979714918209,.0276438810333863,.0038405729373609,.0003951896511349,.0000321767881768,.0000002888167364,.0000003960315187];const y=p-.5;if(Math.abs(y)<.42){const a=[2.50662823884,-18.61500062529,41.39119773534,-25.44106049637];const b=[-8.47351093090,23.08336743743,-21.06224101826,3.13082909833];const r=y*y;return y*(((a[3]*r+a[2])*r+a[1])*r+a[0])/(((b[3]*r+b[2])*r+b[1])*r+b[0]+1)}const r=y<0?Math.log(-Math.log(y)):Math.log(-Math.log(1-y));let x=c[0];for(let i=1;i<9;i++)x+=c[i]*r**i;return y<0?-x:x};
+
+function dc(cid,fn){const c=el(cid);if(!c)return;const ctx=c.getContext('2d');const r=c.parentElement.getBoundingClientRect();c.width=r.width-20;c.height=r.height-20;ctx.clearRect(0,0,c.width,c.height);fn(ctx,c.width,c.height)}
+function dg(ctx,W,H,mn,mx,fmt=v=>'$'+v.toFixed(0)){for(let i=0;i<=4;i++){const y=H*i/4;ctx.strokeStyle='#2A1D14';ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();ctx.fillStyle='#5C4A3A';ctx.font='8px JetBrains Mono';ctx.fillText(fmt(mx-(mx-mn)*i/4),3,y-2)}}
+function dl(ctx,d,W,H,mn,mx,col,lw=1.5){const n=d.length;if(n<2)return;const px=i=>(i/(n-1))*W;const py=v=>H-(v-mn)/(mx-mn)*(H-4)-2;ctx.beginPath();d.forEach((v,i)=>{i===0?ctx.moveTo(px(i),py(v)):ctx.lineTo(px(i),py(v))});ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.stroke()}
+
+setInterval(()=>{el('clk').textContent=new Date().toLocaleTimeString('en-US',{hour12:false})},1000);
+
+const SCENARIOS=[{name:'2008 GFC',shock:-0.38},{name:'COVID Crash',shock:-0.34},{name:'Black Monday',shock:-0.22},{name:'Rate Shock',shock:-0.15}];
+
+let SIM={
+  running:false,timer:null,speed:150,day:0,
+  portfolioValue:10000000,confidenceLevel:95,holdingPeriod:1,
+  baseVol:0.012,currentVol:0.012,garchA:0.10,garchB:0.85,
+  exposureMult:1.0,
+  retHist:[],navHist:[10000000],varHist:[],
+  lastStress:null,lastZone:'GREEN',lastCapCharge:0,
+  aiHistory:[],
+};
+
+let PLUGINS={
+  limitMonitor:{enabled:false,limitPct:2.5,checkEvery:3,lastCheck:0},
+  autoDeRisk:{enabled:false,triggerPct:3.5,reduceBy:25,cooldown:0},
+  modelRecon:{enabled:false,checkEvery:5,threshold:25,lastCheck:0},
+  stressTest:{enabled:false,checkEvery:10,lastCheck:0},
+  volRegime:{enabled:false,checkEvery:5,lastCheck:0,lastRegime:'NORMAL'},
+  baselCapital:{enabled:false,redFlagged:false},
+  tailRisk:{enabled:false,checkEvery:10,threshold:1.5,lastCheck:0},
+  aiPulse:{enabled:false,interval:20,lastPulse:0},
+  journal:{enabled:true,log:[]},
+};
+const PLUGIN_NAMES={limitMonitor:'VaR Limit Monitor',autoDeRisk:'Auto De-Risk Engine',modelRecon:'Model Reconciliation',stressTest:'Stress Test Scheduler',volRegime:'Vol Regime Detector',baselCapital:'Basel Capital Engine',tailRisk:'Tail Risk Monitor',aiPulse:'AI Pulse',journal:'Risk Journal'};
+
+function plog(name,msg,color){
+  color=color||'var(--t2)';
+  PLUGINS.journal.log.push({day:SIM.day,name,msg});
+  const log=el('activityLog');if(log){
+    const row=document.createElement('div');row.className='log-row';row.style.borderLeftColor=color;
+    row.innerHTML=`<span class="log-time">D${SIM.day}</span><span class="log-msg" style="color:${color}">${name}: ${msg}</span>`;
+    log.insertBefore(row,log.firstChild);
+    while(log.children.length>60)log.removeChild(log.lastChild);
+  }
+}
+function togglePlugin(key,toggleEl){
+  PLUGINS[key].enabled=!PLUGINS[key].enabled;
+  toggleEl.classList.toggle('on',PLUGINS[key].enabled);
+  el('pc-'+key)?.classList.toggle('active',PLUGINS[key].enabled);
+  updatePluginCount();
+  plog(PLUGIN_NAMES[key],PLUGINS[key].enabled?'Activated — now running automatically':'Deactivated','var(--ok)');
+}
+function updatePluginCount(){const n=Object.values(PLUGINS).filter(p=>p.enabled).length;const b=el('pluginCount');if(b)b.textContent=n}
+function openDrawer(){el('pluginsDrawer').classList.add('open');el('pluginsBackdrop').classList.add('show')}
+function closeDrawer(){el('pluginsDrawer').classList.remove('open');el('pluginsBackdrop').classList.remove('show')}
+
+function exportJournal(){
+  if(!PLUGINS.journal.log.length){alert('No events logged yet — run the simulation first.');return}
+  const headers='day,plugin,event\n';
+  const rows=PLUGINS.journal.log.map(r=>`${r.day},"${r.name}","${r.msg}"`).join('\n');
+  const blob=new Blob([headers+rows],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='var_risk_journal_'+Date.now()+'.csv';document.body.appendChild(a);a.click();a.remove();
+  URL.revokeObjectURL(url);
+  plog('Risk Journal','Exported '+PLUGINS.journal.log.length+' events to CSV','var(--ok)');
+}
+
+function computeParametricVaR(){
+  const z=normInv(SIM.confidenceLevel/100);
+  return SIM.portfolioValue*SIM.currentVol*Math.sqrt(SIM.holdingPeriod)*z;
+}
+function computeHistoricalVaR(){
+  const w=SIM.retHist.slice(-252);
+  if(w.length<20)return computeParametricVaR();
+  const losses=w.map(r=>-r*SIM.portfolioValue).sort((a,b)=>b-a);
+  const idx=Math.floor((1-SIM.confidenceLevel/100)*w.length);
+  return Math.max(0,losses[idx]||0)*Math.sqrt(SIM.holdingPeriod);
+}
+function computeMonteCarloVaR(){
+  const n=5000;const losses=[];
+  for(let i=0;i<n;i++){let p=0;for(let d=0;d<SIM.holdingPeriod;d++)p+=nr()*SIM.currentVol;losses.push(-p*SIM.portfolioValue)}
+  losses.sort((a,b)=>b-a);
+  const idx=Math.floor((1-SIM.confidenceLevel/100)*n);
+  return Math.max(0,losses[idx]||0);
+}
+function computeExpectedShortfall(){
+  const w=SIM.retHist.slice(-252);
+  if(w.length<20)return computeParametricVaR()*1.25;
+  const losses=w.map(r=>-r*SIM.portfolioValue).sort((a,b)=>b-a);
+  const idx=Math.max(1,Math.floor((1-SIM.confidenceLevel/100)*w.length));
+  const tail=losses.slice(0,idx);
+  return tail.reduce((a,b)=>a+b,0)/tail.length;
+}
+function countExceptions(){
+  const w=SIM.retHist.slice(-250);
+  const threshold=computeParametricVaR()/SIM.portfolioValue;
+  return w.filter(r=>-r>threshold).length;
+}
+function baselZone(exceptions){
+  if(exceptions<=4)return{zone:'GREEN',mult:3.0};
+  if(exceptions<=9)return{zone:'YELLOW',mult:3.0+(exceptions-4)*0.17};
+  return{zone:'RED',mult:4.0};
+}
+
+function runPlugins(){
+  const varPct=computeParametricVaR()/SIM.portfolioValue*100;
+
+  if(PLUGINS.limitMonitor.enabled&&SIM.day-PLUGINS.limitMonitor.lastCheck>=PLUGINS.limitMonitor.checkEvery){
+    PLUGINS.limitMonitor.lastCheck=SIM.day;
+    el('pst-limit').textContent='Current VaR: '+varPct.toFixed(2)+'% (limit '+PLUGINS.limitMonitor.limitPct+'%)';
+    if(varPct>PLUGINS.limitMonitor.limitPct){
+      plog('VaR Limit Monitor','🚨 VaR '+varPct.toFixed(2)+'% breached limit of '+PLUGINS.limitMonitor.limitPct+'%','var(--ng)');
+    }
+  }
+
+  if(PLUGINS.autoDeRisk.enabled){
+    if(PLUGINS.autoDeRisk.cooldown>0){
+      PLUGINS.autoDeRisk.cooldown--;
+      el('pst-derisk').textContent='Cooldown: '+PLUGINS.autoDeRisk.cooldown+'d · Exposure '+(SIM.exposureMult*100).toFixed(0)+'%';
+    }else{
+      if(varPct>PLUGINS.autoDeRisk.triggerPct){
+        const before=SIM.exposureMult;
+        SIM.exposureMult=Math.max(0.2,SIM.exposureMult*(1-PLUGINS.autoDeRisk.reduceBy/100));
+        PLUGINS.autoDeRisk.cooldown=10;
+        plog('Auto De-Risk Engine','🛡 VaR breach ('+varPct.toFixed(2)+'%) -> exposure trimmed '+(before*100).toFixed(0)+'% -> '+(SIM.exposureMult*100).toFixed(0)+'%','var(--ng)');
+      }
+      el('pst-derisk').textContent='Exposure: '+(SIM.exposureMult*100).toFixed(0)+'% of full size';
+    }
+  }
+
+  if(PLUGINS.modelRecon.enabled&&SIM.day-PLUGINS.modelRecon.lastCheck>=PLUGINS.modelRecon.checkEvery){
+    PLUGINS.modelRecon.lastCheck=SIM.day;
+    const pVar=computeParametricVaR(),hVar=computeHistoricalVaR();
+    const div=Math.abs(pVar-hVar)/Math.max(1,pVar)*100;
+    el('pst-recon').textContent='Model divergence: '+div.toFixed(1)+'%';
+    if(div>PLUGINS.modelRecon.threshold){
+      plog('Model Reconciliation','⚠ Parametric vs Historical VaR diverge by '+div.toFixed(0)+'% — model risk elevated',div>PLUGINS.modelRecon.threshold*1.5?'var(--ng)':'var(--warn)');
+    }
+  }
+
+  if(PLUGINS.stressTest.enabled&&SIM.day-PLUGINS.stressTest.lastCheck>=PLUGINS.stressTest.checkEvery){
+    PLUGINS.stressTest.lastCheck=SIM.day;
+    const impacts=SCENARIOS.map(s=>({name:s.name,shock:s.shock,loss:SIM.portfolioValue*Math.abs(s.shock)}));
+    SIM.lastStress=impacts;
+    const worst=impacts.reduce((a,b)=>b.loss>a.loss?b:a);
+    el('pst-stress').textContent='Worst case: '+worst.name+' ('+fmtUSD(-worst.loss)+')';
+    plog('Stress Test','Ran 4 scenarios — worst: '+worst.name+' = '+fmtUSD(-worst.loss),'var(--warn)');
+  }
+
+  if(PLUGINS.volRegime.enabled&&SIM.day-PLUGINS.volRegime.lastCheck>=PLUGINS.volRegime.checkEvery){
+    PLUGINS.volRegime.lastCheck=SIM.day;
+    const annVol=SIM.currentVol*Math.sqrt(252)*100;
+    const regime=annVol>35?'CRISIS':annVol>22?'ELEVATED':annVol>12?'NORMAL':'LOW';
+    el('pst-vol').textContent='Ann. vol: '+annVol.toFixed(1)+'% -> '+regime;
+    if(regime!==PLUGINS.volRegime.lastRegime){
+      plog('Vol Regime Detector','Regime shift: '+PLUGINS.volRegime.lastRegime+' -> '+regime+' (vol '+annVol.toFixed(1)+'%)',regime==='CRISIS'?'var(--ng)':regime==='ELEVATED'?'var(--warn)':'var(--ok)');
+      PLUGINS.volRegime.lastRegime=regime;
+    }
+  }
+
+  if(PLUGINS.baselCapital.enabled){
+    const exceptions=countExceptions();
+    const{zone,mult}=baselZone(exceptions);
+    const recentVar=SIM.varHist.slice(-60);
+    const avgVar60=recentVar.reduce((a,b)=>a+b,0)/Math.max(1,recentVar.length);
+    const capCharge=Math.max(computeParametricVaR(),mult*avgVar60)*Math.sqrt(10);
+    SIM.lastCapCharge=capCharge;SIM.lastZone=zone;
+    el('pst-basel').textContent=zone+' zone · '+exceptions+' exceptions · Capital '+fmtUSD(capCharge);
+    if(zone==='RED'&&!PLUGINS.baselCapital.redFlagged){
+      plog('Basel Capital Engine','🔴 RED ZONE — '+exceptions+' VaR exceptions in trailing 250d, model needs recalibration','var(--ng)');
+      PLUGINS.baselCapital.redFlagged=true;
+    }else if(zone!=='RED'){PLUGINS.baselCapital.redFlagged=false}
+  }
+
+  if(PLUGINS.tailRisk.enabled&&SIM.day-PLUGINS.tailRisk.lastCheck>=PLUGINS.tailRisk.checkEvery){
+    PLUGINS.tailRisk.lastCheck=SIM.day;
+    const w=SIM.retHist.slice(-252);
+    if(w.length>30){
+      const mean=w.reduce((a,b)=>a+b,0)/w.length;
+      const std=Math.sqrt(w.reduce((s,r)=>s+(r-mean)**2,0)/w.length);
+      const kurt=std>0?w.reduce((s,r)=>s+((r-mean)/std)**4,0)/w.length-3:0;
+      el('pst-tail').textContent='Excess kurtosis: '+kurt.toFixed(2);
+      if(kurt>PLUGINS.tailRisk.threshold){
+        plog('Tail Risk Monitor','⚠ Excess kurtosis '+kurt.toFixed(1)+' — fat tails detected, parametric VaR may understate risk','var(--warn)');
+      }
+    }
+  }
+
+  if(PLUGINS.aiPulse.enabled&&SIM.day-PLUGINS.aiPulse.lastPulse>=PLUGINS.aiPulse.interval&&SIM.day>5){
+    PLUGINS.aiPulse.lastPulse=SIM.day;el('pst-pulse').textContent='Last pulse: day '+SIM.day;
+    fireAIPulse();
+  }
+
+  el('pst-journal').textContent=PLUGINS.journal.log.length+' events logged';
+}
+
+async function fireAIPulse(){
+  const chat=el('aiChat');
+  const am=document.createElement('div');am.className='ai-msg ai';am.style.borderColor='var(--bdra)';
+  am.innerHTML='<div class="al" style="color:var(--purple)">⬡ AUTO-PULSE</div><div class="ac"></div>';
+  chat.appendChild(am);chat.scrollTop=chat.scrollHeight;
+  const varPct=(computeParametricVaR()/SIM.portfolioValue*100).toFixed(2);
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:80,messages:[{role:'user',content:`Risk co-pilot pulse. Day ${SIM.day}, Parametric VaR ${varPct}% of portfolio, Basel zone ${SIM.lastZone}, exposure ${(SIM.exposureMult*100).toFixed(0)}%, ann. vol ${(SIM.currentVol*Math.sqrt(252)*100).toFixed(1)}%. ONE short sharp sentence (under 18 words) flagging the most notable risk signal right now. No preamble.`}]})});
+    const d=await res.json();const txt=d.content[0]?.text||'';
+    am.querySelector('.ac').textContent=txt;chat.scrollTop=chat.scrollHeight;
+  }catch(err){am.remove()}
+}
+
+let activeChart='dist';
+function setChartTab(tab,btn){
+  activeChart=tab;
+  document.querySelectorAll('#chartTabs .tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');
+  const lbs={dist:'Daily P&L distribution with VaR threshold',backtest:'Rolling VaR vs actual P&L — red bars are exceptions',stress:'Hypothetical loss under 4 historical crisis scenarios'};
+  el('chartLbl').textContent=lbs[tab];
+  drawActiveChart();
+}
+function drawActiveChart(){
+  if(activeChart==='dist')drawDistChart();
+  else if(activeChart==='backtest')drawBacktestChart();
+  else drawStressChart();
+}
+function drawDistChart(){
+  dc('mainChart',(ctx,W,H)=>{
+    const w=SIM.retHist.slice(-252);
+    if(w.length<10){ctx.fillStyle='#5C4A3A';ctx.font='10px JetBrains Mono';ctx.fillText('Start the simulation to build P&L history.',10,20);return}
+    const dollarPnL=w.map(r=>r*SIM.portfolioValue);
+    const n=70;const rng=Math.max(...dollarPnL.map(Math.abs))*1.1||1;
+    const bw=2*rng/n;const bins=new Array(n).fill(0);
+    dollarPnL.forEach(v=>{const b=Math.floor((v+rng)/bw);if(b>=0&&b<n)bins[b]++});
+    const mb=Math.max(...bins)||1;
+    for(let i=0;i<5;i++){ctx.strokeStyle='#2A1D14';ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(0,H*i/4);ctx.lineTo(W,H*i/4);ctx.stroke()}
+    bins.forEach((b,i)=>{const val=-rng+i*bw;ctx.fillStyle=val<0?'rgba(255,61,87,.55)':'rgba(0,232,150,.55)';if(b>0)ctx.fillRect((i/n)*W,H-1-(b/mb)*(H-20),W/n-1,(b/mb)*(H-20))});
+    const pVar=computeParametricVaR();
+    const vx=(-pVar+rng)/(2*rng)*W;
+    ctx.beginPath();ctx.moveTo(vx,0);ctx.lineTo(vx,H);ctx.strokeStyle='rgba(255,107,53,.85)';ctx.setLineDash([4,4]);ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#FF6B35';ctx.font='bold 8px JetBrains Mono';ctx.fillText('VaR('+SIM.confidenceLevel+'%)',vx+4,13);
+    ctx.fillStyle='#5C4A3A';ctx.font='8px JetBrains Mono';ctx.fillText('← LOSS | GAIN →',W/2-35,H-3);
+  });
+}
+function drawBacktestChart(){
+  dc('mainChart',(ctx,W,H)=>{
+    const varW=SIM.varHist.slice(-150),retW=SIM.retHist.slice(-150);
+    if(varW.length<5){ctx.fillStyle='#5C4A3A';ctx.font='10px JetBrains Mono';ctx.fillText('Start the simulation to build backtest history.',10,20);return}
+    const n=Math.min(varW.length,retW.length);
+    const dollarPnL=retW.slice(-n).map(r=>r*SIM.portfolioValue);
+    const negVar=varW.slice(-n).map(v=>-v);
+    const mn=Math.min(...negVar)*1.15,mx=Math.max(...dollarPnL,1)*1.2;
+    dg(ctx,W,H,mn,mx,v=>'$'+(v/1000).toFixed(0)+'K');
+    const px=i=>(i/(n-1))*W;const py=v=>H-(v-mn)/(mx-mn)*H;
+    dollarPnL.forEach((v,i)=>{
+      const isException=v<negVar[i];
+      ctx.fillStyle=isException?'rgba(255,61,87,.85)':'rgba(0,232,150,.35)';
+      const barH=Math.abs(py(v)-py(0));const barY=Math.min(py(v),py(0));
+      ctx.fillRect(px(i)-1.4,barY,2.8,barH);
+    });
+    dl(ctx,negVar,W,H,mn,mx,'#FF6B35',1.6);
+    ctx.fillStyle='#FF6B35';ctx.font='8px JetBrains Mono';ctx.fillText('— VaR Threshold',W-95,12);
+    ctx.fillStyle='#FF3D57';ctx.fillText('■ Exception',W-95,24);
+  });
+}
+function drawStressChart(){
+  dc('mainChart',(ctx,W,H)=>{
+    const impacts=SIM.lastStress||SCENARIOS.map(s=>({name:s.name,shock:s.shock,loss:SIM.portfolioValue*Math.abs(s.shock)}));
+    const n=impacts.length;const bw=W/n*0.5;const bg=W/n;
+    const mx=Math.max(...impacts.map(s=>s.loss))*1.25||1;
+    dg(ctx,W,H,0,mx,v=>'$'+(v/1e6).toFixed(1)+'M');
+    impacts.forEach((s,i)=>{
+      const x=i*bg+bg/2-bw/2;const h=(s.loss/mx)*(H-26);const y=H-h;
+      ctx.fillStyle='#FF6B35';ctx.fillRect(x,y,bw,h);
+      ctx.fillStyle='#FF6B35';ctx.font='bold 9px JetBrains Mono';ctx.textAlign='center';
+      ctx.fillText('-'+fmtUSD(s.loss),x+bw/2,y-4);
+      ctx.fillStyle='#A08870';ctx.font='7px JetBrains Mono';ctx.fillText(s.name,x+bw/2,H-3);
+      ctx.textAlign='left';
+    });
+  });
+}
+
+function updateUI(){
+  const pVar=computeParametricVaR(),hVar=computeHistoricalVaR(),mVar=computeMonteCarloVaR(),es=computeExpectedShortfall();
+  const annVol=SIM.currentVol*Math.sqrt(252)*100;
+  const exceptions=countExceptions();
+  const{zone}=baselZone(exceptions);
+  const regime=annVol>35?'CRISIS':annVol>22?'ELEVATED':annVol>12?'NORMAL':'LOW';
+
+  el('tb-pv').textContent=fmtUSD(SIM.portfolioValue);
+  el('tb-day').textContent=SIM.day;
+  el('tb-var').textContent='-'+fmtUSD(pVar);
+  el('tb-regime').textContent=regime;
+  el('tb-regime').className='ts-v '+(regime==='CRISIS'?'ng':regime==='ELEVATED'?'gold':'ok');
+  el('tb-zone').textContent=zone;
+  el('tb-zone').className='ts-v '+(zone==='RED'?'ng':zone==='YELLOW'?'gold':'ok');
+
+  el('s-pvar').textContent='-'+fmtUSD(pVar);
+  el('s-hvar').textContent='-'+fmtUSD(hVar);
+  el('s-mvar').textContent='-'+fmtUSD(mVar);
+  el('s-es').textContent='-'+fmtUSD(es);
+  el('s-vol').textContent=annVol.toFixed(1)+'%';
+  el('s-exposure').textContent=(SIM.exposureMult*100).toFixed(0)+'%';
+  el('s-exposure').className='stat-v '+(SIM.exposureMult<0.7?'v-ng':SIM.exposureMult<1?'v-warn':'');
+  el('s-exceptions').textContent=exceptions;
+  el('s-exceptions').className='stat-v '+(zone==='RED'?'v-ng':zone==='YELLOW'?'v-warn':'v-ok');
+  el('s-capcharge').textContent=SIM.lastCapCharge?fmtUSD(SIM.lastCapCharge):'-';
+
+  renderEventFeed();
+  drawActiveChart();
+}
+
+function step(){
+  if(!SIM.running)return;
+  SIM.day++;
+  const omega=SIM.baseVol*SIM.baseVol*(1-SIM.garchA-SIM.garchB);
+  const shock=nr();
+  const innov=SIM.currentVol*shock;
+  const ret=innov*SIM.exposureMult;
+  SIM.currentVol=Math.sqrt(Math.max(1e-8,omega+SIM.garchA*innov*innov+SIM.garchB*SIM.currentVol*SIM.currentVol));
+  SIM.portfolioValue=Math.max(1,SIM.portfolioValue*(1+ret));
+  SIM.retHist.push(ret);if(SIM.retHist.length>500)SIM.retHist.shift();
+  SIM.navHist.push(SIM.portfolioValue);if(SIM.navHist.length>500)SIM.navHist.shift();
+  SIM.varHist.push(computeParametricVaR());if(SIM.varHist.length>500)SIM.varHist.shift();
+
+  if(SIM.exposureMult<1)SIM.exposureMult=Math.min(1,SIM.exposureMult+0.015);
+
+  runPlugins();
+  if(!SIM.running)return;
+  updateUI();
+  if(SIM.running)SIM.timer=setTimeout(step,SIM.speed);
+}
+
+function toggleSim(){
+  SIM.running=!SIM.running;
+  const btn=el('mainBtn');
+  if(SIM.running){
+    btn.textContent='⏹ STOP';btn.className='ctrl-btn stop';
+    el('mktStatus').textContent='LIVE';el('mktDot').className='mbdot open';
+    el('simBadge').textContent='LIVE';el('simBadge').className='pbadge live';
+    step();
+  }else{
+    btn.textContent='▶ START';btn.className='ctrl-btn run';
+    el('mktStatus').textContent='PAUSED';el('mktDot').className='mbdot closed';
+    el('simBadge').textContent='IDLE';el('simBadge').className='pbadge idle';
+    clearTimeout(SIM.timer);
+  }
+}
+function setSpeed(v){SIM.speed=parseInt(v)}
+function resetSim(){
+  SIM.running=false;clearTimeout(SIM.timer);
+  el('mainBtn').textContent='▶ START';el('mainBtn').className='ctrl-btn run';
+  el('mktStatus').textContent='IDLE';el('mktDot').className='mbdot closed';
+  el('simBadge').textContent='IDLE';el('simBadge').className='pbadge idle';
+  const pv=parseFloat(el('pvInput').value)||10000000;
+  Object.assign(SIM,{day:0,portfolioValue:pv,currentVol:SIM.baseVol,exposureMult:1.0,retHist:[],navHist:[pv],varHist:[],lastStress:null,lastZone:'GREEN',lastCapCharge:0});
+  PLUGINS.journal.log=[];
+  PLUGINS.limitMonitor.lastCheck=0;PLUGINS.modelRecon.lastCheck=0;PLUGINS.stressTest.lastCheck=0;PLUGINS.volRegime.lastCheck=0;PLUGINS.volRegime.lastRegime='NORMAL';PLUGINS.tailRisk.lastCheck=0;PLUGINS.aiPulse.lastPulse=0;PLUGINS.autoDeRisk.cooldown=0;PLUGINS.baselCapital.redFlagged=false;
+  el('activityLog').innerHTML='';
+  updateUI();
+  plog('System','Simulation reset','var(--t2)');
+}
+
+function renderEventFeed(){
+  const feed=PLUGINS.journal.log.slice(-14).reverse();
+  el('eventFeed').innerHTML=feed.length?feed.map(ev=>`<div class="log-row"><span class="log-time">D${ev.day}</span><span class="log-msg">${ev.name}: ${ev.msg}</span></div>`).join(''):'<div style="color:var(--t3);font-size:9px;padding:8px 0;text-align:center">No risk alerts yet.</div>';
+}
+
+async function aiSend(){
+  const q=el('aiInp').value.trim();if(!q)return;el('aiInp').value='';
+  const chat=el('aiChat');
+  const um=document.createElement('div');um.className='ai-msg';um.style.cssText='background:var(--accd);border:1px solid var(--bdra);color:var(--t1);font-family:"JetBrains Mono",monospace;font-size:9px;padding:7px 9px;border-radius:3px;align-self:flex-end;max-width:95%;white-space:pre-wrap';um.textContent=q;chat.appendChild(um);
+  const am=document.createElement('div');am.className='ai-msg ai';am.innerHTML='<div class="al">⬡ RISK AI</div><div class="ac"></div>';chat.appendChild(am);
+  chat.scrollTop=chat.scrollHeight;
+
+  const pVar=computeParametricVaR(),hVar=computeHistoricalVaR(),mVar=computeMonteCarloVaR(),es=computeExpectedShortfall();
+  const exceptions=countExceptions();const{zone}=baselZone(exceptions);
+  const context=`You are a Chief Risk Officer at a major bank, expert in VaR methodology, Basel III capital frameworks, and tail risk management. Current live risk simulation state (Day ${SIM.day}):
+Portfolio Value: ${fmtUSD(SIM.portfolioValue)} | Confidence: ${SIM.confidenceLevel}% | Holding Period: ${SIM.holdingPeriod}d
+Parametric VaR: ${fmtUSD(pVar)} | Historical VaR: ${fmtUSD(hVar)} | Monte Carlo VaR: ${fmtUSD(mVar)} | Expected Shortfall: ${fmtUSD(es)}
+Annualized Vol: ${(SIM.currentVol*Math.sqrt(252)*100).toFixed(1)}% | Current Exposure: ${(SIM.exposureMult*100).toFixed(0)}%
+Basel Zone: ${zone} | VaR Exceptions (250d): ${exceptions} | Est. Capital Charge: ${SIM.lastCapCharge?fmtUSD(SIM.lastCapCharge):'not yet computed'}
+
+User question: ${q}`;
+  SIM.aiHistory.push({role:'user',content:context});
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:SIM.aiHistory})});
+    const d=await res.json();const txt=d.content[0]?.text||'Analysis unavailable.';
+    SIM.aiHistory.push({role:'assistant',content:txt});
+    const ac=am.querySelector('.ac');let i=0;const t=()=>{if(i<txt.length){ac.textContent+=txt[i++];chat.scrollTop=chat.scrollHeight;setTimeout(t,6)}};t();
+  }catch(err){am.querySelector('.ac').textContent='Connection error. Check API.'}
+}
+function aiQ(p){el('aiInp').value=p;aiSend()}
+
+window.addEventListener('resize',()=>drawActiveChart());
+
+updateUI();updatePluginCount();
+</script>
+</body>
+</html>
