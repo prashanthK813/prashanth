@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockPulse — Market Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #050a0f;
+    --bg2: #090f17;
+    --bg3: #0d1620;
+    --panel: #0a1520;
+    --border: #1a2d42;
+    --border2: #1f3550;
+    --neon: #00e5ff;
+    --neon2: #00ff88;
+    --neon3: #ff6b35;
+    --neon4: #ffd60a;
+    --red: #ff3d57;
+    --green: #00e676;
+    --text: #c8ddef;
+    --text2: #6b8fa8;
+    --text3: #3a5a72;
+    --glow: 0 0 20px rgba(0,229,255,0.3);
+    --glow2: 0 0 20px rgba(0,255,136,0.3);
+    --shadow: 0 4px 30px rgba(0,0,0,0.6);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse at 20% 0%, rgba(0,229,255,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(0,255,136,0.03) 0%, transparent 50%);
+  }
+
+  /* TICKER TAPE */
+  .ticker-wrapper {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+    height: 36px;
+    display: flex;
+    align-items: center;
+  }
+  .ticker-label {
+    background: var(--neon);
+    color: var(--bg);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 0 12px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+  }
+  .ticker-scroll {
+    display: flex;
+    animation: scroll-ticker 40s linear infinite;
+    white-space: nowrap;
+  }
+  .ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 24px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    border-right: 1px solid var(--border);
+  }
+  .ticker-item .sym { color: var(--neon); font-weight: 600; }
+  .ticker-item .price { color: var(--text); }
+  .ticker-item .chg.up { color: var(--green); }
+  .ticker-item .chg.dn { color: var(--red); }
+  @keyframes scroll-ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* HEADER */
+  header {
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: rgba(9,15,23,0.95);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--neon), var(--neon2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: var(--glow);
+  }
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+  .logo-text span { color: var(--neon); }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--green);
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 1px;
+  }
+  .live-dot {
+    width: 7px; height: 7px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: blink 1.5s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  .time-display {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--text2);
+    background: var(--bg3);
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  /* NAV TABS */
+  .nav-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 12px 32px 0;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-tab {
+    padding: 10px 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--text2);
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    background: transparent;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .nav-tab:hover { color: var(--neon); border-color: var(--border); }
+  .nav-tab.active {
+    color: var(--neon);
+    background: var(--bg3);
+    border-color: var(--border);
+    border-bottom: 2px solid var(--neon);
+    margin-bottom: -1px;
+  }
+
+  /* MAIN LAYOUT */
+  main { padding: 24px 32px; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  /* GRID LAYOUTS */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+
+  /* PANEL / CARD */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--neon), transparent);
+    opacity: 0.4;
+  }
+  .panel-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--neon);
+    box-shadow: 0 0 6px var(--neon);
+  }
+
+  /* INPUTS */
+  .input-group { margin-bottom: 14px; }
+  .input-label {
+    display: block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 6px;
+  }
+  input[type="number"], input[type="text"], select {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input:focus, select:focus {
+    border-color: var(--neon);
+    box-shadow: 0 0 0 2px rgba(0,229,255,0.1);
+  }
+  select option { background: var(--bg3); }
+
+  /* BUTTONS */
+  .btn {
+    padding: 11px 22px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--neon) 0%, #0099bb 100%);
+    color: var(--bg);
+    font-weight: 700;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: var(--glow); }
+  .btn-green {
+    background: linear-gradient(135deg, var(--green) 0%, #00a857 100%);
+    color: var(--bg);
+    font-weight: 700;
+  }
+  .btn-green:hover { transform: translateY(-1px); box-shadow: var(--glow2); }
+  .btn-danger {
+    background: rgba(255,61,87,0.15);
+    color: var(--red);
+    border: 1px solid rgba(255,61,87,0.3);
+  }
+  .btn-danger:hover { background: rgba(255,61,87,0.25); }
+  .btn-outline {
+    background: transparent;
+    color: var(--neon);
+    border: 1px solid var(--neon);
+  }
+  .btn-outline:hover { background: rgba(0,229,255,0.08); }
+  .btn-full { width: 100%; justify-content: center; }
+
+  /* RESULT BOX */
+  .result-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-key { color: var(--text2); font-family: 'Share Tech Mono', monospace; }
+  .result-val { color: var(--text); font-weight: 600; }
+  .result-val.up { color: var(--green); }
+  .result-val.dn { color: var(--red); }
+  .result-val.highlight {
+    color: var(--neon);
+    font-size: 15px;
+    text-shadow: 0 0 10px rgba(0,229,255,0.4);
+  }
+
+  /* MARKET INDEX CARDS */
+  .index-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .index-card:hover { border-color: var(--neon); transform: translateY(-2px); }
+  .index-card.positive { border-left: 3px solid var(--green); }
+  .index-card.negative { border-left: 3px solid var(--red); }
+  .index-name {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--text2);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .index-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .index-change {
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .index-change.up { color: var(--green); }
+  .index-change.dn { color: var(--red); }
+  .sparkline {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    opacity: 0.5;
+  }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 10px;
+    border-bottom: 1px solid rgba(26,45,66,0.5);
+    font-family: 'JetBrains Mono', monospace;
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(0,229,255,0.03); }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .badge-green { background: rgba(0,230,118,0.15); color: var(--green); }
+  .badge-red { background: rgba(255,61,87,0.15); color: var(--red); }
+  .badge-blue { background: rgba(0,229,255,0.15); color: var(--neon); }
+
+  /* PORTFOLIO */
+  .portfolio-summary {
+    display: grid;
+    grid-template-columns: repeat(4,1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .summary-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .summary-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  .summary-value {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+  }
+  .summary-value.up { color: var(--green); }
+  .summary-value.dn { color: var(--red); }
+  .summary-value.neutral { color: var(--neon); }
+
+  /* CHART WRAPPER */
+  .chart-wrap {
+    position: relative;
+    height: 220px;
+  }
+
+  /* SIP / CALCULATOR specific */
+  .calc-output {
+    background: linear-gradient(135deg, rgba(0,229,255,0.06), rgba(0,255,136,0.03));
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    margin-top: 16px;
+  }
+  .calc-big-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--neon);
+    text-shadow: 0 0 20px rgba(0,229,255,0.4);
+    margin: 8px 0;
+  }
+  .calc-sub { font-size: 11px; color: var(--text2); font-family: 'Share Tech Mono', monospace; letter-spacing: 1px; }
+
+  /* OPTIONS CHAIN */
+  .options-type-toggle {
+    display: flex;
+    background: var(--bg3);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 16px;
+    width: fit-content;
+  }
+  .opt-btn {
+    padding: 8px 20px;
+    border: none;
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+  .opt-btn.active { background: var(--neon); color: var(--bg); font-weight: 700; }
+
+  /* SECTION HEADER */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: #fff;
+  }
+  .section-title span { color: var(--neon); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+
+  /* SLIDERS */
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--border2);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    background: var(--neon);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 6px var(--neon);
+  }
+
+  .separator { height: 1px; background: var(--border); margin: 16px 0; }
+  .mt-16 { margin-top: 16px; }
+  .mb-16 { margin-bottom: 16px; }
+  .flex { display: flex; }
+  .gap-8 { gap: 8px; }
+  .gap-12 { gap: 12px; }
+  .flex-col { flex-direction: column; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+
+  /* NOTIFICATION */
+  .notification {
+    position: fixed;
+    top: 80px; right: 24px;
+    background: var(--panel);
+    border: 1px solid var(--neon);
+    border-radius: 8px;
+    padding: 12px 18px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--neon);
+    z-index: 1000;
+    display: none;
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .portfolio-summary { grid-template-columns: 1fr 1fr; }
+    main { padding: 16px; }
+    header { padding: 12px 16px; }
+    .nav-tabs { padding: 12px 16px 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TICKER TAPE -->
+<div class="ticker-wrapper">
+  <div class="ticker-label">⚡ LIVE FEED</div>
+  <div style="overflow:hidden;flex:1;">
+    <div class="ticker-scroll" id="tickerScroll"></div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">📈</div>
+    <div class="logo-text">Stock<span>Pulse</span></div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div> NSE/BSE LIVE SIM</div>
+    <div class="time-display" id="clockDisplay">--:--:--</div>
+  </div>
+</header>
+
+<!-- NAV TABS -->
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="switchTab('dashboard')">📊 Dashboard</div>
+  <div class="nav-tab" onclick="switchTab('portfolio')">💼 Portfolio</div>
+  <div class="nav-tab" onclick="switchTab('calculator')">🧮 P&L Calc</div>
+  <div class="nav-tab" onclick="switchTab('sip')">📅 SIP Planner</div>
+  <div class="nav-tab" onclick="switchTab('options')">⚡ Options Calc</div>
+  <div class="nav-tab" onclick="switchTab('screener')">🔍 Screener</div>
+</div>
+
+<main>
+
+<!-- ==================== DASHBOARD ==================== -->
+<div id="tab-dashboard" class="tab-content active">
+
+  <!-- Index Cards -->
+  <div class="grid-4 mb-16">
+    <div class="index-card positive" id="card-nifty">
+      <div class="index-name">NIFTY 50</div>
+      <div class="index-value" id="nifty-val">22,450.30</div>
+      <div class="index-change up" id="nifty-chg">▲ 187.45 (0.84%)</div>
+    </div>
+    <div class="index-card positive" id="card-sensex">
+      <div class="index-name">SENSEX</div>
+      <div class="index-value" id="sensex-val">73,962.10</div>
+      <div class="index-change up" id="sensex-chg">▲ 621.30 (0.85%)</div>
+    </div>
+    <div class="index-card negative" id="card-banknifty">
+      <div class="index-name">BANK NIFTY</div>
+      <div class="index-value" id="banknifty-val">48,120.75</div>
+      <div class="index-change dn" id="banknifty-chg">▼ 93.20 (0.19%)</div>
+    </div>
+    <div class="index-card positive" id="card-midcap">
+      <div class="index-name">NIFTY MIDCAP</div>
+      <div class="index-value" id="midcap-val">46,875.50</div>
+      <div class="index-change up" id="midcap-chg">▲ 304.70 (0.65%)</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Market Chart -->
+    <div class="panel">
+      <div class="panel-title"><div class="dot"></div>NIFTY 50 — INTRADAY</div>
+      <div class="chart-wrap">
+        <canvas id="marketChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Top Movers -->
+    <div class="panel">
+      <div class="panel-title"><div class="dot"></div>TOP MOVERS</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="opt-btn active" onclick="showMovers('gainers',this)">GAINERS</button>
+        <button class="opt-btn" onclick="showMovers('losers',this)">LOSERS</button>
+      </div>
+      <table>
+        <thead><tr><th>Stock</th><th>Price (₹)</th><th>Change</th><th>Vol</th></tr></thead>
+        <tbody id="moversTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid-2 mt-16">
+    <!-- Sector Performance -->
+    <div class="panel">
+      <div class="panel-title"><div class="dot"></div>SECTOR HEATMAP</div>
+      <div id="sectorHeatmap" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+    </div>
+
+    <!-- Market Stats -->
+    <div class="panel">
+      <div class="panel-title"><div class="dot"></div>MARKET BREADTH</div>
+      <div class="result-box" style="margin-top:0;">
+        <div class="result-row"><span class="result-key">ADVANCES</span><span class="result-val up" id="stat-adv">1,432</span></div>
+        <div class="result-row"><span class="result-key">DECLINES</span><span class="result-val dn" id="stat-dec">897</span></div>
+        <div class="result-row"><span class="result-key">UNCHANGED</span><span class="result-val" id="stat-unch">121</span></div>
+        <div class="result-row"><span class="result-key">52W HIGHS</span><span class="result-val up" id="stat-high">87</span></div>
+        <div class="result-row"><span class="result-key">52W LOWS</span><span class="result-val dn" id="stat-low">23</span></div>
+        <div class="result-row"><span class="result-key">NIFTY PCR</span><span class="result-val highlight" id="stat-pcr">1.24</span></div>
+        <div class="result-row"><span class="result-key">FII NET (₹ Cr)</span><span class="result-val up" id="stat-fii">+2,341</span></div>
+        <div class="result-row"><span class="result-key">DII NET (₹ Cr)</span><span class="result-val dn" id="stat-dii">-1,187</span></div>
+        <div class="result-row"><span class="result-key">INDIA VIX</span><span class="result-val" id="stat-vix">14.35</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PORTFOLIO ==================== -->
+<div id="tab-portfolio" class="tab-content">
+  <div class="section-header">
+    <div class="section-title">My <span>Portfolio</span></div>
+    <button class="btn btn-primary" onclick="openAddStock()">+ ADD STOCK</button>
+  </div>
+
+  <div class="portfolio-summary">
+    <div class="summary-card">
+      <div class="summary-label">Invested Value</div>
+      <div class="summary-value neutral" id="port-invested">₹0</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Current Value</div>
+      <div class="summary-value neutral" id="port-current">₹0</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Total P&L</div>
+      <div class="summary-value up" id="port-pnl">₹0</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Day's Change</div>
+      <div class="summary-value up" id="port-today">₹0</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel" style="grid-column: span 1;">
+      <div class="panel-title"><div class="dot"></div>HOLDINGS</div>
+      <table>
+        <thead><tr><th>Stock</th><th>Qty</th><th>Avg (₹)</th><th>CMP (₹)</th><th>P&L</th><th>Action</th></tr></thead>
+        <tbody id="portfolioTable"><tr><td colspan="6" style="text-align:center;color:var(--text3);padding:30px;">No holdings. Add stocks above.</td></tr></tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><div class="dot"></div>ALLOCATION</div>
+      <div class="chart-wrap">
+        <canvas id="allocationChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Stock Form (hidden) -->
+  <div id="addStockForm" style="display:none;" class="panel mt-16">
+    <div class="panel-title"><div class="dot"></div>ADD HOLDING</div>
+    <div class="grid-3">
+      <div class="input-group">
+        <label class="input-label">Stock Symbol</label>
+        <select id="addSymbol">
+          <option value="RELIANCE">RELIANCE</option>
+          <option value="TCS">TCS</option>
+          <option value="INFY">INFY</option>
+          <option value="HDFCBANK">HDFCBANK</option>
+          <option value="ICICIBANK">ICICIBANK</option>
+          <option value="WIPRO">WIPRO</option>
+          <option value="BAJFINANCE">BAJFINANCE</option>
+          <option value="TATAMOTORS">TATAMOTORS</option>
+          <option value="SBIN">SBIN</option>
+          <option value="MARUTI">MARUTI</option>
+          <option value="HCLTECH">HCLTECH</option>
+          <option value="AXISBANK">AXISBANK</option>
+          <option value="LT">L&T</option>
+          <option value="ASIANPAINT">ASIANPAINT</option>
+          <option value="ULTRACEMCO">ULTRACEMCO</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Quantity</label>
+        <input type="number" id="addQty" placeholder="e.g. 50" min="1">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Avg Buy Price (₹)</label>
+        <input type="number" id="addAvg" placeholder="e.g. 2800" min="1">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-green" onclick="addToPortfolio()">ADD HOLDING</button>
+      <button class="btn btn-danger" onclick="document.getElementById('addStockForm').style.display='none'">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== P&L CALCULATOR ==================== -->
+<div id="tab-calculator" class="tab-content">
+  <div class="section-header">
+    <div class="section-title">P&L <span>Calculator</span></div>
+  </div>
+  <div class="grid-2">
+    <!-- Trade Calculator -->
+    <div class="panel">
+      <div class="panel-title"><div class="dot"></div>TRADE P&L</div>
+      <div class="options-type-toggle">
+        <button class="opt-btn active" onclick="setTradeType('buy',this)">BUY</button>
+        <button class="opt-btn" onclick="setTradeType('sell',this)">SELL (SHORT)</button>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Stock / Instrument</label>
+        <input type="text" id="calc-stock" placeholder="e.g. RELIANCE">
+      </div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label class="input-label">Entry Price (₹)</label>
+          <input type="number" id="calc-entry" placeholder="2800" oninput="calcPnL()">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Exit / Target Price (₹)</label>
+          <input type="number" id="calc-exit" placeholder="3000" oninput="calcPnL()">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label class="input-label">Quantity / Lots</label>
+          <input type="number" id="calc-qty" placeholder="50" oninput="calcPnL()">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Segment</label>
+          <select id="calc-segment" onchange="calcPnL()">
+            <option value="delivery">Delivery (CNC)</option>
+            <option value="intraday">Intraday (MIS)</option>
+            <option value="futures">Futures</option>
+            <option value="options">Options</option>
+          </select>
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Stop Loss (₹) — Optional</label>
+        <input type="number" id="calc-sl" placeholder="2700" oninput="calcPnL()">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="calcPnL()">CALCULATE P&L</button>
+
+      <div id="pnlResult" class="result-box" style="display:none;">
+        <div class="result-row"><span class="result-key">GROSS P&L</span><span class="result-val" id="res-gross">—</span></div>
+        <div class="result-row"><span class="result-key">BROKERAGE</span><span class="result-val" id="res-brok">—</span></div>
+        <div class="result-row"><span class="result-key">STT</span><span class="result-val" id="res-stt">—</span></div>
+        <div class="result-row"><span class="result-key">EXCHANGE CHARGES</span><span class="result-val" id="res-exch">—</span></div>
+        <div class="result-row"><span class="result-key">SEBI CHARGES</span><span class="result-val" id="res-sebi">—</span></div>
+        <div class="result-row"><span class="result-key">GST (18%)</span><span class="result-val" id="res-gst">—</span></div>
+        <div class="result-row"><span class="result-key">STAMP DUTY</span><span class="result-val" id="res-stamp">—</span></div>
+        <div class="result-row"><span class="result-key">TOTAL CHARGES</span><span class="result-val dn" id="res-totalchg">—</span></div>
+        <div class="result-row"><span class="result-key">NET P&L</span><span class="result-val highlight" id="res-net">—</span></div>
+        <div class="result-row"><span class="result-key">RETURN %</span><span class="result-val" id="res-ret">—</span></div>
+        <div class="result-row"><span class="result-key">STOP LOSS RISK</span><span class="result-val dn" id="res-risk">—</span></div>
+        <div class="result-row"><span class="result-key">RISK:REWARD</span><span class="result-val" id="res-rr">—</span></div>
+        <div class="result-row"><span class="result-key">BREAKEVEN PRICE</span><span class="result-val" id="res-be">—</span></div>
+      </div>
+    </div>
+
+    <!-- Brokerage Calculator -->
+    <div class="panel">
+      <div class="panel-title"><div class="dot"></div>BROKERAGE BREAKDOWN</div>
+      <div class="input-group">
+        <label class="input-label">Broker Type</label>
+        <select id="broker-type" onchange="updateBroker()">
+          <option value="zerodha">Zerodha</option>
+          <option value="groww">Groww</option>
+          <option value="upstox">Upstox</option>
+          <option value="icici">ICICI Direct</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Trade Value (₹)</label>
+        <input type="number" id="brok-value" placeholder="100000" oninput="calcBrokerage()">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Segment</label>
+        <select id="brok-seg" onchange="calcBrokerage()">
+          <option value="delivery">Equity Delivery</option>
+          <option value="intraday">Equity Intraday</option>
+          <option value="futures">F&O Futures</option>
+          <option value="options">F&O Options</option>
+        </select>
+      </div>
+
+      <div id="brokResult" class="result-box">
+        <div class="result-row"><span class="result-key">BROKERAGE</span><span class="result-val" id="b-brok">₹0.00</span></div>
+        <div class="result-row"><span class="result-key">STT</span><span class="result-val" id="b-stt">₹0.00</span></div>
+        <div class="result-row"><span class="result-key">TRANSACTION CHARGES</span><span class="result-val" id="b-txn">₹0.00</span></div>
+        <div class="result-row"><span class="result-key">SEBI CHARGES</span><span class="result-val" id="b-sebi">₹0.00</span></div>
+        <div class="result-row"><span class="result-key">STAMP DUTY</span><span class="result-val" id="b-stamp">₹0.00</span></div>
+        <div class="result-row"><span class="result-key">GST (18%)</span><span class="result-val" id="b-gst">₹0.00</span></div>
+        <div class="result-row"><span class="result-key">TOTAL CHARGES</span><span class="result-val dn" id="b-total">₹0.00</span></div>
+        <div class="result-row"><span class="result-key">EFFECTIVE RATE</span><span class="result-val highlight" id="b-rate">0.00%</span></div>
+      </div>
+
+      <!-- Position Sizing -->
+      <div class="panel-title mt-16"><div class="dot"></div>POSITION SIZING</div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label class="input-label">Capital (₹)</label>
+          <input type="number" id="ps-capital" placeholder="500000" oninput="calcPositionSize()">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Risk % per Trade</label>
+          <input type="number" id="ps-risk" placeholder="1" step="0.1" oninput="calcPositionSize()">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label class="input-label">Entry Price (₹)</label>
+          <input type="number" id="ps-entry" placeholder="500" oninput="calcPositionSize()">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Stop Loss (₹)</label>
+          <input type="number" id="ps-sl" placeholder="480" oninput="calcPositionSize()">
+        </div>
+      </div>
+      <div class="result-box" style="margin-top:8px;">
+        <div class="result-row"><span class="result-key">MAX RISK AMOUNT</span><span class="result-val dn" id="ps-maxrisk">₹0</span></div>
+        <div class="result-row"><span class="result-key">SUGGESTED QTY</span><span class="result-val highlight" id="ps-qty">0</span></div>
+        <div class="result-row"><span class="result-key">TRADE VALUE</span><span class="result-val" id="ps-tradeval">₹0</span></div>
+        <div class="result-row"><span class="result-key">% OF CAPITAL</span><span class="result-val" id="ps-capperc">0%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SIP PLANNER ==================== -->
+<div id="tab-sip" class="tab-content">
+  <div class="section-header">
+    <div class="section-title">SIP <span>Planner</span></div>
+  </div>
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-title"><div class="dot"></div>SIP CALCULATOR</div>
+      <div class="input-group">
+        <label class="input-label">Monthly SIP Amount (₹)</label>
+        <input type="number" id="sip-amount" value="10000" oninput="calcSIP()">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Expected Return (% p.a.) — <span id="sip-rate-label" style="color:var(--neon)">12%</span></label>
+        <input type="range" id="sip-rate" min="1" max="30" value="12" oninput="document.getElementById('sip-rate-label').textContent=this.value+'%';calcSIP()">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Investment Period — <span id="sip-years-label" style="color:var(--neon)">10 Years</span></label>
+        <input type="range" id="sip-years" min="1" max="40" value="10" oninput="document.getElementById('sip-years-label').textContent=this.value+' Years';calcSIP()">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Step-Up SIP (% annual increase)</label>
+        <input type="number" id="sip-stepup" value="0" placeholder="e.g. 10" oninput="calcSIP()">
+      </div>
+      <div class="calc-output">
+        <div class="calc-sub">TOTAL CORPUS</div>
+        <div class="calc-big-num" id="sip-corpus">₹0</div>
+        <div style="display:flex;justify-content:space-around;margin-top:16px;">
+          <div><div class="calc-sub">INVESTED</div><div style="color:var(--text);font-size:16px;font-family:'Syne',sans-serif;font-weight:700;margin-top:4px;" id="sip-invested">₹0</div></div>
+          <div><div class="calc-sub">GAINS</div><div style="color:var(--green);font-size:16px;font-family:'Syne',sans-serif;font-weight:700;margin-top:4px;" id="sip-gains">₹0</div></div>
+          <div><div class="calc-sub">GAIN %</div><div style="color:var(--neon4);font-size:16px;font-family:'Syne',sans-serif;font-weight:700;margin-top:4px;" id="sip-gainperc">0%</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><div class="dot"></div>GROWTH PROJECTION</div>
+      <div class="chart-wrap">
+        <canvas id="sipChart"></canvas>
+      </div>
+      <div class="separator"></div>
+      <div class="panel-title"><div class="dot"></div>LUMPSUM CALCULATOR</div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label class="input-label">Lumpsum Amount (₹)</label>
+          <input type="number" id="ls-amount" value="100000" oninput="calcLumpsum()">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Expected Return (% p.a.)</label>
+          <input type="number" id="ls-rate" value="12" oninput="calcLumpsum()">
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Investment Period (Years)</label>
+        <input type="number" id="ls-years" value="10" oninput="calcLumpsum()">
+      </div>
+      <div class="result-box" style="margin-top:8px;">
+        <div class="result-row"><span class="result-key">FINAL VALUE</span><span class="result-val highlight" id="ls-final">₹0</span></div>
+        <div class="result-row"><span class="result-key">TOTAL GAINS</span><span class="result-val up" id="ls-gains">₹0</span></div>
+        <div class="result-row"><span class="result-key">CAGR WEALTH RATIO</span><span class="result-val" id="ls-ratio">0x</span></div>
+        <div class="result-row"><span class="result-key">RULE OF 72 (Doubling)</span><span class="result-val" id="ls-rule72">0 Yrs</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Goal Planning -->
+  <div class="panel mt-16">
+    <div class="panel-title"><div class="dot"></div>GOAL-BASED PLANNING — HOW MUCH SIP DO I NEED?</div>
+    <div class="grid-3">
+      <div class="input-group">
+        <label class="input-label">Target Amount (₹)</label>
+        <input type="number" id="goal-target" placeholder="10000000" oninput="calcGoal()">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Time Horizon (Years)</label>
+        <input type="number" id="goal-years" placeholder="15" oninput="calcGoal()">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Expected Return (% p.a.)</label>
+        <input type="number" id="goal-rate" placeholder="12" oninput="calcGoal()">
+      </div>
+    </div>
+    <div class="result-box" style="margin-top:8px;">
+      <div class="result-row"><span class="result-key">REQUIRED MONTHLY SIP</span><span class="result-val highlight" id="goal-sip">₹0</span></div>
+      <div class="result-row"><span class="result-key">TOTAL INVESTMENT</span><span class="result-val" id="goal-invested">₹0</span></div>
+      <div class="result-row"><span class="result-key">WEALTH GAINED</span><span class="result-val up" id="goal-gains">₹0</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== OPTIONS CALCULATOR ==================== -->
+<div id="tab-options" class="tab-content">
+  <div class="section-header">
+    <div class="section-title">Options <span>P&L</span> Calculator</div>
+  </div>
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-title"><div class="dot"></div>OPTIONS PRICING (BLACK-SCHOLES)</div>
+      <div class="options-type-toggle" id="opt-type-toggle">
+        <button class="opt-btn active" onclick="setOptType('CE',this)">CALL (CE)</button>
+        <button class="opt-btn" onclick="setOptType('PE',this)">PUT (PE)</button>
+      </div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label class="input-label">Spot Price (₹)</label>
+          <input type="number" id="opt-spot" value="22450" oninput="calcOptions()">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Strike Price (₹)</label>
+          <input type="number" id="opt-strike" value="22500" oninput="calcOptions()">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label class="input-label">Days to Expiry</label>
+          <input type="number" id="opt-days" value="7" oninput="calcOptions()">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Implied Volatility (%)</label>
+          <input type="number" id="opt-iv" value="14" oninput="calcOptions()">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label class="input-label">Risk-Free Rate (%)</label>
+          <input type="number" id="opt-rfr" value="6.5" oninput="calcOptions()">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Lot Size</label>
+          <input type="number" id="opt-lot" value="50" oninput="calcOptions()">
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Premium Paid / Received (₹)</label>
+        <input type="number" id="opt-premium" value="120" oninput="calcOptions()">
+      </div>
+      <div class="input-group">
+        <label class="input-label">No. of Lots</label>
+        <input type="number" id="opt-lots-num" value="1" oninput="calcOptions()">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="calcOptions()">CALCULATE</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><div class="dot"></div>OPTIONS ANALYTICS</div>
+      <div class="result-box" style="margin-top:0;">
+        <div class="result-row"><span class="result-key">THEORETICAL PRICE</span><span class="result-val highlight" id="opt-theo">₹0</span></div>
+        <div class="result-row"><span class="result-key">INTRINSIC VALUE</span><span class="result-val" id="opt-intrinsic">₹0</span></div>
+        <div class="result-row"><span class="result-key">TIME VALUE</span><span class="result-val" id="opt-timeval">₹0</span></div>
+        <div class="result-row"><span class="result-key">DELTA (Δ)</span><span class="result-val" id="opt-delta">0</span></div>
+        <div class="result-row"><span class="result-key">GAMMA (Γ)</span><span class="result-val" id="opt-gamma">0</span></div>
+        <div class="result-row"><span class="result-key">THETA (Θ) /day</span><span class="result-val dn" id="opt-theta">0</span></div>
+        <div class="result-row"><span class="result-key">VEGA (ν) /1%IV</span><span class="result-val" id="opt-vega">0</span></div>
+        <div class="result-row"><span class="result-key">MONEYNESS</span><span class="result-val" id="opt-money">—</span></div>
+      </div>
+      <div class="separator"></div>
+      <div class="panel-title"><div class="dot"></div>TRADE P&L</div>
+      <div class="result-box" style="margin-top:0;">
+        <div class="result-row"><span class="result-key">TOTAL PREMIUM PAID</span><span class="result-val dn" id="opt-paid">₹0</span></div>
+        <div class="result-row"><span class="result-key">BREAKEVEN PRICE</span><span class="result-val" id="opt-be">₹0</span></div>
+        <div class="result-row"><span class="result-key">MAX PROFIT</span><span class="result-val up" id="opt-maxprofit">Unlimited</span></div>
+        <div class="result-row"><span class="result-key">MAX LOSS</span><span class="result-val dn" id="opt-maxloss">₹0</span></div>
+        <div class="result-row"><span class="result-key">MARGIN REQUIRED (approx)</span><span class="result-val" id="opt-margin">₹0</span></div>
+      </div>
+      <div class="chart-wrap mt-16" style="height:180px;">
+        <canvas id="optionsPayoffChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SCREENER ==================== -->
+<div id="tab-screener" class="tab-content">
+  <div class="section-header">
+    <div class="section-title">Stock <span>Screener</span></div>
+  </div>
+  <div class="panel mb-16">
+    <div class="panel-title"><div class="dot"></div>FILTERS</div>
+    <div class="grid-4">
+      <div class="input-group">
+        <label class="input-label">Market Cap</label>
+        <select id="scr-cap">
+          <option value="">All</option>
+          <option value="large">Large Cap (>₹20,000 Cr)</option>
+          <option value="mid">Mid Cap (₹5,000-20,000 Cr)</option>
+          <option value="small">Small Cap (<₹5,000 Cr)</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Sector</label>
+        <select id="scr-sector">
+          <option value="">All Sectors</option>
+          <option value="IT">IT/Technology</option>
+          <option value="Banking">Banking & Finance</option>
+          <option value="Auto">Automobile</option>
+          <option value="Pharma">Pharma</option>
+          <option value="FMCG">FMCG</option>
+          <option value="Energy">Energy</option>
+          <option value="Metal">Metal</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label class="input-label">PE Ratio (Max)</label>
+        <input type="number" id="scr-pe" placeholder="e.g. 30">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Dividend Yield (Min %)</label>
+        <input type="number" id="scr-div" placeholder="e.g. 2">
+      </div>
+    </div>
+    <div class="grid-4">
+      <div class="input-group">
+        <label class="input-label">52W Return (Min %)</label>
+        <input type="number" id="scr-ret" placeholder="e.g. 10">
+      </div>
+      <div class="input-group">
+        <label class="input-label">ROE (Min %)</label>
+        <input type="number" id="scr-roe" placeholder="e.g. 15">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Debt/Equity (Max)</label>
+        <input type="number" id="scr-de" placeholder="e.g. 1">
+      </div>
+      <div class="input-group" style="display:flex;align-items:flex-end;">
+        <button class="btn btn-primary btn-full" onclick="runScreener()">RUN SCREENER</button>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><div class="dot"></div>SCREENER RESULTS — <span id="scr-count" style="color:var(--neon)">0</span> STOCKS</div>
+    <table>
+      <thead><tr><th>Stock</th><th>Sector</th><th>CMP (₹)</th><th>Mkt Cap</th><th>PE</th><th>PB</th><th>ROE%</th><th>Div%</th><th>D/E</th><th>52W Ret%</th><th>Rating</th></tr></thead>
+      <tbody id="screenerTable"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<div class="notification" id="notification"></div>
+
+<script>
+// ==================== STATE ====================
+const stockData = {
+  RELIANCE:    { cmp: 2847.30, pe: 24.2, pb: 2.1, roe: 9.4,  div: 0.5, de: 0.3, cap: 'large', sector: 'Energy',  mcap: 1923400, ret52: 12.3 },
+  TCS:         { cmp: 3812.50, pe: 29.8, pb: 14.2,roe: 47.8, div: 3.2, de: 0.0, cap: 'large', sector: 'IT',      mcap: 1383000, ret52: 8.1 },
+  INFY:        { cmp: 1541.20, pe: 24.1, pb: 8.4, roe: 32.5, div: 2.8, de: 0.0, cap: 'large', sector: 'IT',      mcap: 639400,  ret52: -2.4 },
+  HDFCBANK:    { cmp: 1487.60, pe: 17.3, pb: 2.4, roe: 16.8, div: 1.1, de: 7.2, cap: 'large', sector: 'Banking', mcap: 1102000, ret52: -3.1 },
+  ICICIBANK:   { cmp: 1104.45, pe: 18.7, pb: 3.1, roe: 17.2, div: 0.9, de: 6.8, cap: 'large', sector: 'Banking', mcap: 776300,  ret52: 23.4 },
+  WIPRO:       { cmp: 471.30,  pe: 21.4, pb: 4.1, roe: 15.1, div: 0.2, de: 0.0, cap: 'large', sector: 'IT',      mcap: 243700,  ret52: -5.2 },
+  BAJFINANCE:  { cmp: 6834.20, pe: 32.1, pb: 6.8, roe: 22.4, div: 0.3, de: 4.1, cap: 'large', sector: 'Banking', mcap: 412000,  ret52: 9.7 },
+  TATAMOTORS:  { cmp: 947.80,  pe: 10.2, pb: 3.7, roe: 43.1, div: 0.5, de: 1.1, cap: 'large', sector: 'Auto',    mcap: 349200,  ret52: 41.2 },
+  SBIN:        { cmp: 785.40,  pe: 10.8, pb: 1.8, roe: 18.2, div: 1.9, de: 8.4, cap: 'large', sector: 'Banking', mcap: 700200,  ret52: 28.6 },
+  MARUTI:      { cmp: 10847.30,pe: 27.3, pb: 5.2, roe: 18.6, div: 1.3, de: 0.0, cap: 'large', sector: 'Auto',    mcap: 327000,  ret52: 15.3 },
+  HCLTECH:     { cmp: 1412.60, pe: 25.6, pb: 6.1, roe: 23.1, div: 4.2, de: 0.0, cap: 'large', sector: 'IT',      mcap: 383400,  ret52: 16.8 },
+  AXISBANK:    { cmp: 1108.90, pe: 14.2, pb: 2.1, roe: 17.8, div: 0.1, de: 7.4, cap: 'large', sector: 'Banking', mcap: 341700,  ret52: 18.2 },
+  LT:          { cmp: 3421.70, pe: 32.4, pb: 5.3, roe: 14.7, div: 1.0, de: 0.8, cap: 'large', sector: 'Infra',   mcap: 470000,  ret52: 22.1 },
+  ASIANPAINT:  { cmp: 2821.40, pe: 56.3, pb: 14.2,roe: 27.3, div: 1.0, de: 0.1, cap: 'large', sector: 'FMCG',   mcap: 270000,  ret52: -8.4 },
+  ULTRACEMCO:  { cmp: 9734.20, pe: 38.1, pb: 7.1, roe: 18.9, div: 0.6, de: 0.1, cap: 'large', sector: 'Infra',   mcap: 280000,  ret52: 19.3 },
+};
+
+let portfolio = [];
+let tradeType = 'buy';
+let optionType = 'CE';
+let sipChart, allocationChart, marketChart, payoffChart;
+let marketData = [];
+
+// Generate market data
+function generateMarketData() {
+  let val = 22263; const d = [];
+  for (let i = 0; i < 75; i++) {
+    val += (Math.random() - 0.47) * 40;
+    d.push(parseFloat(val.toFixed(2)));
+  }
+  return d;
+}
+
+// ==================== CLOCK ====================
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clockDisplay').textContent =
+    now.toLocaleTimeString('en-IN', { hour12: false });
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ==================== TICKER ====================
+const tickerStocks = [
+  ...Object.entries(stockData).map(([sym, d]) => ({ sym, price: d.cmp, chg: ((Math.random()-0.45)*4).toFixed(2) })),
+  { sym: 'NIFTY', price: 22450.30, chg: '+187.45' },
+  { sym: 'SENSEX', price: 73962.10, chg: '+621.30' },
+];
+
+function buildTicker() {
+  const items = [...tickerStocks, ...tickerStocks];
+  const html = items.map(t => {
+    const up = parseFloat(t.chg) >= 0;
+    return `<div class="ticker-item">
+      <span class="sym">${t.sym}</span>
+      <span class="price">₹${t.price.toLocaleString('en-IN', {minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+      <span class="chg ${up?'up':'dn'}">${up?'▲':'▼'} ${Math.abs(t.chg)}%</span>
+    </div>`;
+  }).join('');
+  document.getElementById('tickerScroll').innerHTML = html;
+}
+buildTicker();
+
+// Live price simulation
+setInterval(() => {
+  Object.keys(stockData).forEach(sym => {
+    stockData[sym].cmp += (Math.random() - 0.5) * stockData[sym].cmp * 0.002;
+    stockData[sym].cmp = parseFloat(stockData[sym].cmp.toFixed(2));
+  });
+  updatePortfolioSummary();
+}, 3000);
+
+// ==================== TABS ====================
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  if (tab === 'dashboard') initDashboard();
+  if (tab === 'sip') { calcSIP(); calcLumpsum(); }
+  if (tab === 'options') calcOptions();
+  if (tab === 'portfolio') updatePortfolioSummary();
+}
+
+// ==================== DASHBOARD ====================
+function initDashboard() {
+  buildMovers('gainers');
+  buildSectorHeatmap();
+  initMarketChart();
+}
+
+const gainers = [
+  { sym: 'TATAMOTORS', price: 947.80, chg: 4.12 },
+  { sym: 'SBIN', price: 785.40, chg: 3.28 },
+  { sym: 'ICICIBANK', price: 1104.45, chg: 2.87 },
+  { sym: 'HCLTECH', price: 1412.60, chg: 2.41 },
+  { sym: 'AXISBANK', price: 1108.90, chg: 1.95 },
+];
+const losers = [
+  { sym: 'ASIANPAINT', price: 2821.40, chg: -2.14 },
+  { sym: 'INFY', price: 1541.20, chg: -1.87 },
+  { sym: 'WIPRO', price: 471.30, chg: -1.42 },
+  { sym: 'HDFCBANK', price: 1487.60, chg: -0.98 },
+  { sym: 'BAJFINANCE', price: 6834.20, chg: -0.63 },
+];
+
+function buildMovers(type) {
+  const data = type === 'gainers' ? gainers : losers;
+  document.getElementById('moversTable').innerHTML = data.map(d => `
+    <tr>
+      <td><span style="color:var(--neon);font-weight:600;">${d.sym}</span></td>
+      <td>₹${d.price.toLocaleString('en-IN')}</td>
+      <td><span class="badge ${d.chg>0?'badge-green':'badge-red'}">${d.chg>0?'▲':'▼'} ${Math.abs(d.chg)}%</span></td>
+      <td style="color:var(--text2);">${(Math.random()*50+5).toFixed(1)}M</td>
+    </tr>`).join('');
+}
+
+function showMovers(type, btn) {
+  document.querySelectorAll('.options-type-toggle .opt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildMovers(type);
+}
+
+const sectors = [
+  { name: 'IT', chg: 1.82 }, { name: 'Banking', chg: -0.41 },
+  { name: 'Auto', chg: 2.14 }, { name: 'Pharma', chg: 0.73 },
+  { name: 'FMCG', chg: -0.28 }, { name: 'Energy', chg: 0.56 },
+  { name: 'Metal', chg: 1.23 }, { name: 'Realty', chg: 3.41 },
+];
+
+function buildSectorHeatmap() {
+  document.getElementById('sectorHeatmap').innerHTML = sectors.map(s => {
+    const intensity = Math.min(Math.abs(s.chg) / 3, 1);
+    const bg = s.chg >= 0
+      ? `rgba(0,230,118,${0.1 + intensity * 0.25})`
+      : `rgba(255,61,87,${0.1 + intensity * 0.25})`;
+    const col = s.chg >= 0 ? 'var(--green)' : 'var(--red)';
+    return `<div style="background:${bg};border:1px solid ${col};border-radius:6px;padding:12px;text-align:center;">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text2);letter-spacing:1px;">${s.name}</div>
+      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:${col};margin-top:4px;">${s.chg>0?'+':''}${s.chg}%</div>
+    </div>`;
+  }).join('');
+}
+
+function initMarketChart() {
+  if (marketChart) marketChart.destroy();
+  marketData = generateMarketData();
+  const ctx = document.getElementById('marketChart').getContext('2d');
+  const labels = Array.from({length: marketData.length}, (_,i) => {
+    const h = Math.floor(9 + i*6.5/60); const m = (i * 6.5) % 60;
+    return `${h}:${String(Math.floor(m)).padStart(2,'0')}`;
+  });
+  const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+  gradient.addColorStop(0, 'rgba(0,229,255,0.25)');
+  gradient.addColorStop(1, 'rgba(0,229,255,0.01)');
+  marketChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: marketData,
+        borderColor: 'var(--neon)',
+        backgroundColor: gradient,
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: true,
+        tension: 0.3,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#3a5a72', font: { size: 9 } }, grid: { color: 'rgba(26,45,66,0.5)' } },
+        y: { ticks: { color: '#3a5a72', font: { size: 9 }, callback: v => '₹'+v.toFixed(0) }, grid: { color: 'rgba(26,45,66,0.4)' } }
+      }
+    }
+  });
+
+  // Live update chart
+  setInterval(() => {
+    const last = marketData[marketData.length - 1];
+    const next = parseFloat((last + (Math.random() - 0.48) * 25).toFixed(2));
+    marketData.push(next); marketData.shift();
+    marketChart.data.datasets[0].data = [...marketData];
+    marketChart.update('none');
+  }, 2000);
+}
+
+// ==================== PORTFOLIO ====================
+function openAddStock() {
+  document.getElementById('addStockForm').style.display = 'block';
+}
+
+function addToPortfolio() {
+  const sym = document.getElementById('addSymbol').value;
+  const qty = parseInt(document.getElementById('addQty').value);
+  const avg = parseFloat(document.getElementById('addAvg').value);
+  if (!qty || !avg) { showNotif('⚠ Please fill all fields'); return; }
+
+  const existing = portfolio.find(p => p.sym === sym);
+  if (existing) {
+    const totalQty = existing.qty + qty;
+    existing.avg = ((existing.avg * existing.qty) + (avg * qty)) / totalQty;
+    existing.qty = totalQty;
+  } else {
+    portfolio.push({ sym, qty, avg });
+  }
+  document.getElementById('addStockForm').style.display = 'none';
+  document.getElementById('addQty').value = '';
+  document.getElementById('addAvg').value = '';
+  updatePortfolioTable();
+  showNotif(`✓ ${sym} added to portfolio`);
+}
+
+function removeFromPortfolio(sym) {
+  portfolio = portfolio.filter(p => p.sym !== sym);
+  updatePortfolioTable();
+}
+
+function updatePortfolioTable() {
+  if (!portfolio.length) {
+    document.getElementById('portfolioTable').innerHTML =
+      '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:30px;">No holdings. Add stocks above.</td></tr>';
+    updatePortfolioCharts();
+    updatePortfolioSummary();
+    return;
+  }
+  document.getElementById('portfolioTable').innerHTML = portfolio.map(p => {
+    const cmp = stockData[p.sym]?.cmp || p.avg;
+    const pnl = (cmp - p.avg) * p.qty;
+    const pnlP = ((cmp - p.avg) / p.avg * 100).toFixed(2);
+    const up = pnl >= 0;
+    return `<tr>
+      <td style="color:var(--neon);font-weight:600;">${p.sym}</td>
+      <td>${p.qty}</td>
+      <td>₹${p.avg.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+      <td>₹${cmp.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+      <td><span style="color:${up?'var(--green)':'var(--red)'};">
+        ${up?'+':''}₹${Math.abs(pnl).toLocaleString('en-IN',{minimumFractionDigits:2})}
+        (${up?'+':''}${pnlP}%)
+      </span></td>
+      <td><button class="btn btn-danger" style="padding:4px 10px;font-size:9px;" onclick="removeFromPortfolio('${p.sym}')">REMOVE</button></td>
+    </tr>`;
+  }).join('');
+  updatePortfolioSummary();
+  updatePortfolioCharts();
+}
+
+function updatePortfolioSummary() {
+  if (!portfolio.length) return;
+  let invested = 0, current = 0;
+  portfolio.forEach(p => {
+    invested += p.avg * p.qty;
+    current += (stockData[p.sym]?.cmp || p.avg) * p.qty;
+  });
+  const pnl = current - invested;
+  const dayChg = current * (0.0043 * (Math.random() > 0.5 ? 1 : -1));
+  document.getElementById('port-invested').textContent = '₹' + invested.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  document.getElementById('port-current').textContent = '₹' + current.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  const pnlEl = document.getElementById('port-pnl');
+  pnlEl.textContent = (pnl >= 0 ? '+' : '') + '₹' + pnl.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  pnlEl.className = 'summary-value ' + (pnl >= 0 ? 'up' : 'dn');
+  document.getElementById('port-today').textContent = (dayChg >= 0 ? '+' : '') + '₹' + Math.abs(dayChg).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  updatePortfolioTable();
+}
+
+function updatePortfolioCharts() {
+  if (allocationChart) allocationChart.destroy();
+  if (!portfolio.length) return;
+  const ctx = document.getElementById('allocationChart').getContext('2d');
+  const values = portfolio.map(p => (stockData[p.sym]?.cmp || p.avg) * p.qty);
+  const colors = ['#00e5ff','#00e676','#ff6b35','#ffd60a','#7c3aed','#f43f5e','#06b6d4','#10b981'];
+  allocationChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: portfolio.map(p => p.sym),
+      datasets: [{ data: values, backgroundColor: colors.slice(0, portfolio.length), borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { color: '#6b8fa8', font: { size: 10, family: "'Share Tech Mono'" }, boxWidth: 12 } }
+      }
+    }
+  });
+}
+
+// ==================== P&L CALCULATOR ====================
+function setTradeType(type, btn) {
+  tradeType = type;
+  btn.parentElement.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  calcPnL();
+}
+
+function calcPnL() {
+  const entry = parseFloat(document.getElementById('calc-entry').value);
+  const exit = parseFloat(document.getElementById('calc-exit').value);
+  const qty = parseFloat(document.getElementById('calc-qty').value);
+  const seg = document.getElementById('calc-segment').value;
+  const sl = parseFloat(document.getElementById('calc-sl').value);
+  if (!entry || !exit || !qty) return;
+
+  const tradeVal = entry * qty;
+  const gross = tradeType === 'buy' ? (exit - entry) * qty : (entry - exit) * qty;
+
+  // Charge structure (NSE India)
+  let brokerage = 0;
+  if (seg === 'delivery') brokerage = Math.min(tradeVal * 0.001, 20) * 2;
+  else if (seg === 'intraday') brokerage = Math.min(tradeVal * 0.0003, 20) * 2;
+  else brokerage = Math.min(tradeVal * 0.0003, 20) * 2;
+
+  const stt = seg === 'delivery' ? tradeVal * 0.001 : (tradeVal * 0.00025);
+  const exchCharge = tradeVal * 0.0000345 * 2;
+  const sebi = tradeVal * 0.000001 * 2;
+  const gst = (brokerage + exchCharge + sebi) * 0.18;
+  const stamp = seg === 'delivery' ? tradeVal * 0.00015 : tradeVal * 0.00003;
+  const totalCharge = brokerage + stt + exchCharge + sebi + gst + stamp;
+  const net = gross - totalCharge;
+  const ret = (net / tradeVal) * 100;
+  const breakeven = tradeType === 'buy' ? entry + totalCharge / qty : entry - totalCharge / qty;
+  const risk = sl ? Math.abs((entry - sl) * qty) : 0;
+  const reward = Math.abs(gross);
+  const rr = risk ? (reward / risk).toFixed(2) : '∞';
+
+  const fmt = n => '₹' + Math.abs(n).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  const el = id => document.getElementById(id);
+
+  el('pnlResult').style.display = 'block';
+  el('res-gross').textContent = fmt(gross); el('res-gross').className = 'result-val ' + (gross>=0?'up':'dn');
+  el('res-brok').textContent = fmt(brokerage);
+  el('res-stt').textContent = fmt(stt);
+  el('res-exch').textContent = fmt(exchCharge);
+  el('res-sebi').textContent = fmt(sebi);
+  el('res-gst').textContent = fmt(gst);
+  el('res-stamp').textContent = fmt(stamp);
+  el('res-totalchg').textContent = fmt(totalCharge);
+  el('res-net').textContent = (net>=0?'+':'-') + fmt(net); el('res-net').className = 'result-val highlight ' + (net>=0?'up':'dn');
+  el('res-ret').textContent = ret.toFixed(3) + '%'; el('res-ret').className = 'result-val ' + (ret>=0?'up':'dn');
+  el('res-risk').textContent = risk ? fmt(risk) : '—';
+  el('res-rr').textContent = `1:${rr}`;
+  el('res-be').textContent = '₹' + breakeven.toFixed(2);
+}
+
+function updateBroker() { calcBrokerage(); }
+
+function calcBrokerage() {
+  const val = parseFloat(document.getElementById('brok-value').value) || 0;
+  const seg = document.getElementById('brok-seg').value;
+  const broker = document.getElementById('broker-type').value;
+
+  let brok = 0;
+  if (broker === 'zerodha' || broker === 'groww' || broker === 'upstox') {
+    brok = seg === 'delivery' ? 0 : Math.min(val * 0.0003, 20);
+  } else {
+    brok = seg === 'delivery' ? val * 0.005 : Math.min(val * 0.005, 2500);
+  }
+  brok = brok * 2;
+  const stt = seg === 'delivery' ? val * 0.001 : val * 0.00025;
+  const txn = val * 0.0000345 * 2;
+  const sebi = val * 0.000001 * 2;
+  const stamp = seg === 'delivery' ? val * 0.00015 : val * 0.00003;
+  const gst = (brok + txn + sebi) * 0.18;
+  const total = brok + stt + txn + sebi + stamp + gst;
+
+  const fmt = n => '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  document.getElementById('b-brok').textContent = fmt(brok);
+  document.getElementById('b-stt').textContent = fmt(stt);
+  document.getElementById('b-txn').textContent = fmt(txn);
+  document.getElementById('b-sebi').textContent = fmt(sebi);
+  document.getElementById('b-stamp').textContent = fmt(stamp);
+  document.getElementById('b-gst').textContent = fmt(gst);
+  document.getElementById('b-total').textContent = fmt(total);
+  document.getElementById('b-rate').textContent = val ? ((total/val)*100).toFixed(4)+'%' : '0%';
+}
+
+function calcPositionSize() {
+  const capital = parseFloat(document.getElementById('ps-capital').value) || 0;
+  const riskPct = parseFloat(document.getElementById('ps-risk').value) || 0;
+  const entry = parseFloat(document.getElementById('ps-entry').value) || 0;
+  const sl = parseFloat(document.getElementById('ps-sl').value) || 0;
+  if (!capital || !riskPct || !entry || !sl) return;
+  const maxRisk = capital * riskPct / 100;
+  const riskPerShare = Math.abs(entry - sl);
+  const qty = riskPerShare > 0 ? Math.floor(maxRisk / riskPerShare) : 0;
+  const tradeVal = qty * entry;
+  document.getElementById('ps-maxrisk').textContent = '₹' + maxRisk.toLocaleString('en-IN', {minimumFractionDigits:2});
+  document.getElementById('ps-qty').textContent = qty.toLocaleString('en-IN');
+  document.getElementById('ps-tradeval').textContent = '₹' + tradeVal.toLocaleString('en-IN', {minimumFractionDigits:2});
+  document.getElementById('ps-capperc').textContent = capital ? ((tradeVal/capital)*100).toFixed(2)+'%' : '0%';
+}
+
+// ==================== SIP ====================
+function calcSIP() {
+  const p = parseFloat(document.getElementById('sip-amount').value) || 0;
+  const r = parseFloat(document.getElementById('sip-rate').value) / 100 / 12;
+  const n = parseInt(document.getElementById('sip-years').value) * 12;
+  const stepup = parseFloat(document.getElementById('sip-stepup').value) / 100 || 0;
+
+  let corpus = 0, invested = 0, monthly = p;
+  for (let m = 0; m < n; m++) {
+    if (m > 0 && m % 12 === 0) monthly *= (1 + stepup);
+    invested += monthly;
+    corpus = (corpus + monthly) * (1 + r);
+  }
+  const gains = corpus - invested;
+  document.getElementById('sip-corpus').textContent = '₹' + Math.round(corpus).toLocaleString('en-IN');
+  document.getElementById('sip-invested').textContent = '₹' + Math.round(invested).toLocaleString('en-IN');
+  document.getElementById('sip-gains').textContent = '₹' + Math.round(gains).toLocaleString('en-IN');
+  document.getElementById('sip-gainperc').textContent = invested ? (gains/invested*100).toFixed(1)+'%' : '0%';
+  buildSIPChart(n/12, p, r, stepup);
+}
+
+function buildSIPChart(years, p, r, stepup) {
+  if (sipChart) sipChart.destroy();
+  const labels = [], invested = [], corpus = [];
+  let ci = 0, cc = 0, monthly = p;
+  for (let y = 1; y <= years; y++) {
+    for (let m = 0; m < 12; m++) {
+      if ((y-1)*12+m > 0 && ((y-1)*12+m) % 12 === 0) monthly *= (1 + stepup);
+      ci += monthly;
+      cc = (cc + monthly) * (1 + r);
+    }
+    labels.push('Y' + y);
+    invested.push(Math.round(ci));
+    corpus.push(Math.round(cc));
+  }
+  const ctx = document.getElementById('sipChart').getContext('2d');
+  sipChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Corpus', data: corpus, borderColor: 'var(--neon)', backgroundColor: 'rgba(0,229,255,0.1)', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0 },
+        { label: 'Invested', data: invested, borderColor: 'var(--text2)', backgroundColor: 'transparent', borderDash: [4,4], borderWidth: 1.5, pointRadius: 0 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#6b8fa8', font: { size: 9, family: "'Share Tech Mono'" } } } },
+      scales: {
+        x: { ticks: { color: '#3a5a72', font:{size:9} }, grid: { color: 'rgba(26,45,66,0.4)' } },
+        y: { ticks: { color: '#3a5a72', font:{size:9}, callback: v => '₹' + (v/100000).toFixed(0)+'L' }, grid: { color: 'rgba(26,45,66,0.4)' } }
+      }
+    }
+  });
+}
+
+function calcLumpsum() {
+  const P = parseFloat(document.getElementById('ls-amount').value) || 0;
+  const r = parseFloat(document.getElementById('ls-rate').value) / 100;
+  const n = parseInt(document.getElementById('ls-years').value) || 0;
+  const final = P * Math.pow(1 + r, n);
+  const gains = final - P;
+  const rule72 = r > 0 ? (72 / (r * 100)).toFixed(1) : '—';
+  document.getElementById('ls-final').textContent = '₹' + Math.round(final).toLocaleString('en-IN');
+  document.getElementById('ls-gains').textContent = '₹' + Math.round(gains).toLocaleString('en-IN');
+  document.getElementById('ls-ratio').textContent = P ? (final/P).toFixed(2)+'x' : '0x';
+  document.getElementById('ls-rule72').textContent = rule72 + ' Yrs';
+}
+
+function calcGoal() {
+  const target = parseFloat(document.getElementById('goal-target').value) || 0;
+  const years = parseInt(document.getElementById('goal-years').value) || 0;
+  const rate = parseFloat(document.getElementById('goal-rate').value) / 100 / 12;
+  const n = years * 12;
+  if (!rate || !n) return;
+  const sip = target * rate / (Math.pow(1 + rate, n) - 1);
+  const invested = sip * n;
+  document.getElementById('goal-sip').textContent = '₹' + Math.round(sip).toLocaleString('en-IN');
+  document.getElementById('goal-invested').textContent = '₹' + Math.round(invested).toLocaleString('en-IN');
+  document.getElementById('goal-gains').textContent = '₹' + Math.round(target - invested).toLocaleString('en-IN');
+}
+
+// ==================== OPTIONS ====================
+function setOptType(type, btn) {
+  optionType = type;
+  btn.parentElement.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  calcOptions();
+}
+
+function normalCDF(x) {
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const sign = x < 0 ? -1 : 1; x = Math.abs(x);
+  const t = 1.0 / (1.0 + p * x);
+  const y = 1.0 - ((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return 0.5 * (1.0 + sign * y);
+}
+
+function normalPDF(x) { return Math.exp(-0.5*x*x) / Math.sqrt(2*Math.PI); }
+
+function blackScholes(S, K, T, r, sigma, type) {
+  if (T <= 0) {
+    const intrinsic = type === 'CE' ? Math.max(S-K,0) : Math.max(K-S,0);
+    return { price: intrinsic, delta: type==='CE'?(S>K?1:0):(S<K?-1:0), gamma:0, theta:0, vega:0 };
+  }
+  const d1 = (Math.log(S/K) + (r + sigma*sigma/2)*T) / (sigma * Math.sqrt(T));
+  const d2 = d1 - sigma * Math.sqrt(T);
+  let price, delta;
+  if (type === 'CE') {
+    price = S * normalCDF(d1) - K * Math.exp(-r*T) * normalCDF(d2);
+    delta = normalCDF(d1);
+  } else {
+    price = K * Math.exp(-r*T) * normalCDF(-d2) - S * normalCDF(-d1);
+    delta = normalCDF(d1) - 1;
+  }
+  const gamma = normalPDF(d1) / (S * sigma * Math.sqrt(T));
+  const theta = type === 'CE'
+    ? (-(S * normalPDF(d1) * sigma) / (2 * Math.sqrt(T)) - r * K * Math.exp(-r*T) * normalCDF(d2)) / 365
+    : (-(S * normalPDF(d1) * sigma) / (2 * Math.sqrt(T)) + r * K * Math.exp(-r*T) * normalCDF(-d2)) / 365;
+  const vega = S * normalPDF(d1) * Math.sqrt(T) / 100;
+  return { price, delta, gamma, theta, vega };
+}
+
+function calcOptions() {
+  const S = parseFloat(document.getElementById('opt-spot').value) || 0;
+  const K = parseFloat(document.getElementById('opt-strike').value) || 0;
+  const days = parseInt(document.getElementById('opt-days').value) || 0;
+  const iv = parseFloat(document.getElementById('opt-iv').value) / 100 || 0;
+  const rfr = parseFloat(document.getElementById('opt-rfr').value) / 100 || 0;
+  const lot = parseInt(document.getElementById('opt-lot').value) || 50;
+  const premium = parseFloat(document.getElementById('opt-premium').value) || 0;
+  const lots = parseInt(document.getElementById('opt-lots-num').value) || 1;
+  if (!S || !K) return;
+  const T = days / 365;
+  const bs = blackScholes(S, K, T, rfr, iv, optionType);
+  const intrinsic = optionType === 'CE' ? Math.max(S-K,0) : Math.max(K-S,0);
+  const timeVal = Math.max(bs.price - intrinsic, 0);
+  const money = optionType === 'CE'
+    ? (S > K ? 'IN THE MONEY' : S < K ? 'OUT OF MONEY' : 'AT THE MONEY')
+    : (S < K ? 'IN THE MONEY' : S > K ? 'OUT OF MONEY' : 'AT THE MONEY');
+
+  const totalPaid = premium * lot * lots;
+  const be = optionType === 'CE' ? K + premium : K - premium;
+
+  document.getElementById('opt-theo').textContent = '₹' + bs.price.toFixed(2);
+  document.getElementById('opt-intrinsic').textContent = '₹' + intrinsic.toFixed(2);
+  document.getElementById('opt-timeval').textContent = '₹' + timeVal.toFixed(2);
+  document.getElementById('opt-delta').textContent = bs.delta.toFixed(4);
+  document.getElementById('opt-gamma').textContent = bs.gamma.toFixed(6);
+  document.getElementById('opt-theta').textContent = '₹' + bs.theta.toFixed(2);
+  document.getElementById('opt-vega').textContent = '₹' + bs.vega.toFixed(2);
+  document.getElementById('opt-money').textContent = money;
+  document.getElementById('opt-money').style.color = money.includes('IN') ? 'var(--green)' : money.includes('OUT') ? 'var(--red)' : 'var(--neon4)';
+  document.getElementById('opt-paid').textContent = '₹' + totalPaid.toLocaleString('en-IN',{minimumFractionDigits:2});
+  document.getElementById('opt-be').textContent = '₹' + be.toFixed(2);
+  document.getElementById('opt-maxprofit').textContent = optionType === 'CE' ? 'Unlimited' : '₹' + (K * lot * lots).toLocaleString('en-IN');
+  document.getElementById('opt-maxloss').textContent = '₹' + totalPaid.toLocaleString('en-IN',{minimumFractionDigits:2});
+  document.getElementById('opt-margin').textContent = '₹' + (S * lot * 0.15).toLocaleString('en-IN',{minimumFractionDigits:0});
+
+  buildPayoffChart(S, K, premium, lot, lots, optionType);
+}
+
+function buildPayoffChart(S, K, premium, lot, lots, type) {
+  if (payoffChart) payoffChart.destroy();
+  const range = S * 0.08;
+  const prices = [], pnls = [];
+  for (let p = S - range; p <= S + range; p += range / 30) {
+    prices.push(p.toFixed(0));
+    let pnl;
+    if (type === 'CE') pnl = (Math.max(p-K,0) - premium) * lot * lots;
+    else pnl = (Math.max(K-p,0) - premium) * lot * lots;
+    pnls.push(pnl.toFixed(2));
+  }
+  const ctx = document.getElementById('optionsPayoffChart').getContext('2d');
+  const colors = pnls.map(v => parseFloat(v) >= 0 ? 'rgba(0,230,118,0.8)' : 'rgba(255,61,87,0.8)');
+  payoffChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: prices,
+      datasets: [{ label: 'P&L (₹)', data: pnls, backgroundColor: colors, borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#3a5a72', font:{size:8}, maxTicksLimit: 8 }, grid: { color: 'rgba(26,45,66,0.4)' } },
+        y: { ticks: { color: '#3a5a72', font:{size:8}, callback: v => '₹'+parseInt(v).toLocaleString('en-IN') }, grid: { color: 'rgba(26,45,66,0.4)' } }
+      }
+    }
+  });
+}
+
+// ==================== SCREENER ====================
+const allStocks = Object.entries(stockData).map(([sym, d]) => ({
+  sym, ...d,
+  rating: d.roe > 20 && d.pe < 30 && d.de < 1 ? 'STRONG BUY' :
+          d.roe > 15 && d.pe < 40 ? 'BUY' :
+          d.roe > 10 ? 'HOLD' : 'REVIEW'
+}));
+
+function runScreener() {
+  const cap = document.getElementById('scr-cap').value;
+  const sector = document.getElementById('scr-sector').value;
+  const maxPE = parseFloat(document.getElementById('scr-pe').value) || Infinity;
+  const minDiv = parseFloat(document.getElementById('scr-div').value) || 0;
+  const minRet = parseFloat(document.getElementById('scr-ret').value) || -Infinity;
+  const minROE = parseFloat(document.getElementById('scr-roe').value) || 0;
+  const maxDE = parseFloat(document.getElementById('scr-de').value) || Infinity;
+
+  const results = allStocks.filter(s =>
+    (!cap || s.cap === cap) &&
+    (!sector || s.sector === sector) &&
+    s.pe <= maxPE && s.div >= minDiv &&
+    s.ret52 >= minRet && s.roe >= minROE && s.de <= maxDE
+  );
+
+  document.getElementById('scr-count').textContent = results.length;
+  document.getElementById('screenerTable').innerHTML = results.length ? results.map(s => {
+    const rc = s.rating === 'STRONG BUY' ? 'badge-green' : s.rating === 'BUY' ? 'badge-blue' : 'badge-red';
+    const retC = s.ret52 >= 0 ? 'color:var(--green)' : 'color:var(--red)';
+    return `<tr>
+      <td style="color:var(--neon);font-weight:600;">${s.sym}</td>
+      <td style="color:var(--text2);font-size:10px;">${s.sector}</td>
+      <td>₹${s.cmp.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+      <td style="color:var(--text2);font-size:10px;">${(s.mcap/100).toFixed(0)} Cr</td>
+      <td>${s.pe.toFixed(1)}</td>
+      <td>${s.pb.toFixed(1)}</td>
+      <td style="color:var(--green);">${s.roe.toFixed(1)}%</td>
+      <td>${s.div.toFixed(1)}%</td>
+      <td>${s.de.toFixed(1)}</td>
+      <td style="${retC}">${s.ret52>0?'+':''}${s.ret52.toFixed(1)}%</td>
+      <td><span class="badge ${rc}">${s.rating}</span></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:30px;">No stocks match your criteria.</td></tr>';
+}
+
+// ==================== NOTIFICATION ====================
+function showNotif(msg) {
+  const n = document.getElementById('notification');
+  n.textContent = msg;
+  n.style.display = 'block';
+  setTimeout(() => { n.style.display = 'none'; }, 3000);
+}
+
+// ==================== INIT ====================
+initDashboard();
+calcBrokerage();
+calcSIP();
+calcLumpsum();
+calcOptions();
+runScreener();
+</script>
+</body>
+</html>
